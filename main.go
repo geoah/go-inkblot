@@ -17,12 +17,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Instance struct {
-	ID      string `json:"id"`
-	Type    string `json:"type"`
-	Payload string `json:"payload"`
-}
-
 type routingTable struct {
 	self       *Identity
 	identities map[string]*Identity
@@ -136,7 +130,7 @@ func main() {
 		case "ls":
 			fmt.Printf("Identities connected:\n")
 			for _, identity := range rt.identities {
-				fmt.Printf(" > %s\n", identity.GetURI())
+				fmt.Printf(" > %s %s\n", identity.GetURI(), identity.ID)
 			}
 		default:
 			var parts []string = strings.Split(line, " ")
@@ -147,8 +141,9 @@ func main() {
 						fmt.Println(err)
 					} else {
 						var instance Instance = Instance{}
-						instance.Type = parts[2]
-						instance.Payload = line[len(parts[0])+len(parts[1])+len(parts[2])+3:]
+						instance.Owner = rt.self
+						instance.Payload.Schema = parts[2]
+						// instance.Payload = line[len(parts[0])+len(parts[1])+len(parts[2])+3:]
 						identity.Send(&instance)
 					}
 				}
