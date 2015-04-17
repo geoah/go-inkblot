@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -22,55 +21,6 @@ type Instance struct {
 	ID      string `json:"id"`
 	Type    string `json:"type"`
 	Payload string `json:"payload"`
-}
-
-type Identity struct {
-	ID       string `json:"id"`
-	Hostname string `json:"hostname"`
-	Port     uint   `json:"port"`
-	UseSSL   bool   `json:"ssl"`
-}
-
-func FetchIdentity(uri string) (identity Identity, err error) {
-	fmt.Printf("Trying to fetch %s\n", uri)
-	identity = Identity{}
-	selfJSON, err := json.Marshal(&rt.self)
-	if err == nil {
-		resp, err := http.Post(uri, "application/json", bytes.NewBuffer(selfJSON))
-		if err == nil {
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			if err == nil {
-				fmt.Println(string(body))
-				err = json.Unmarshal(body, &identity)
-			} else {
-				fmt.Println("Got", identity)
-			}
-		}
-	}
-	fmt.Println(identity, err)
-	return identity, err
-}
-
-func (s *Identity) GetURI() string {
-	var uri string = ""
-	if s.UseSSL == true {
-		uri += "https"
-	} else {
-		uri += "http"
-	}
-	uri += fmt.Sprintf("://%s:%d", s.Hostname, s.Port)
-	return uri
-}
-
-func (s *Identity) Send(instance *Instance) (err error) {
-	data, err := json.Marshal(&instance)
-	if err == nil {
-		// var data []byte = []byte(str)
-		fmt.Printf("Sending '%s' to %s\n", string(data), s.GetURI())
-		_, err = http.Post(fmt.Sprintf("%s/instances", s.GetURI()), "application/json", bytes.NewBuffer(data))
-	}
-	return err
 }
 
 type routingTable struct {
@@ -101,16 +51,19 @@ func (s *routingTable) Get(ID string) (*Identity, error) {
 }
 
 var rt *routingTable
-var self Identity = Identity{}
+var initIdentity bool = false
+
+var self Identity
 var initURIsString string = ""
+var identityURL string = ""
 var initURIs []string = make([]string, 0)
 
 func init() {
-	flag.StringVar(&self.ID, "id", "", "ID")
-	flag.StringVar(&self.Hostname, "hostname", "localhost", "Hostname")
-	flag.UintVar(&self.Port, "port", 9000, "Port")
-	flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
-
+	flag.StringVar(&identityURL, "id", "", "Identity URL")
+	// flag.StringVar(&self.Hostname, "hostname", "localhost", "Hostname")
+	// flag.UintVar(&self.Port, "port", 9000, "Port")
+	// flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
+	flag.BoolVar(&initIdentity, "init", false, "Create Identity")
 	flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
 }
 
@@ -118,12 +71,31 @@ func main() {
 	// Parse flags
 	flag.Parse()
 
-	// Check that hostname and id have been set
-	if self.ID == "" {
-		log.Fatal("Missing id")
+	// Check if we need to init the Identity
+	if initIdentity == true {
+
+		// if self.Hostname == "" {
+		// 	log.Fatal("Missing hostname")
+		// }
+
+		var identity Identity = Identity{}
+		identity.Init()
+		selfJSON, err := json.Marshal(&identity)
+		if err == nil {
+			fmt.Println(string(selfJSON))
+		}
+		return
 	}
-	if self.Hostname == "" {
-		log.Fatal("Missing hostname")
+
+	// Check that the id url has been set
+	if identityURL == "" {
+		log.Fatal("Missing id url")
+	}
+
+	// Fetch self id
+	self, err := FetchSelfIdentity(identityURL)
+	if err != nil {
+		panic(err)
 	}
 
 	// Show own URI
@@ -209,7 +181,7 @@ func PostIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		rt.insertIdentity(&identity)
-		json.NewEncoder(w).Encode(self)
+		json.NewEncoder(w).Encode(rt.self)
 	}
 }
 
