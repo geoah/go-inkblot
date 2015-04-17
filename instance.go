@@ -52,20 +52,21 @@ type Payload struct {
 		Identities map[string]PayloadIdentities `json:"identities"`
 		Public     bool                         `json:"public"`
 	} `json:"permissions"`
-	Schema  string `json:"schema"`
-	Version struct {
-		App struct {
-			Name    string `json:"name"`
-			URL     string `json:"url"`
-			Version string `json:"version"`
-		} `json:"app"`
-		Created  uint64 `json:"created"`
-		ID       string `json:"id"`
-		Message  string `json:"message"`
-		Received uint64 `json:"received"`
-		Removed  uint64 `json:"removed"`
-		Updated  uint64 `json:"updated"`
-	} `json:"version"`
+	Schema string `json:"schema"`
+	Data   string `json:"data"`
+	// Version struct {
+	// 	App struct {
+	// 		Name    string `json:"name"`
+	// 		URL     string `json:"url"`
+	// 		Version string `json:"version"`
+	// 	} `json:"app"`
+	// 	Created  uint64 `json:"created"`
+	// 	ID       string `json:"id"`
+	// 	Message  string `json:"message"`
+	// 	Received uint64 `json:"received"`
+	// 	Removed  uint64 `json:"removed"`
+	// 	Updated  uint64 `json:"updated"`
+	// } `json:"version"`
 	Signatures []jsSignature `json:"signatures,omitempty"`
 }
 

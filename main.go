@@ -142,8 +142,10 @@ func main() {
 					} else {
 						var instance Instance = Instance{}
 						instance.Owner = rt.self
+						instance.Payload.Owner = rt.self.ID
 						instance.Payload.Schema = parts[2]
-						// instance.Payload = line[len(parts[0])+len(parts[1])+len(parts[2])+3:]
+						instance.Payload.Data = line[len(parts[0])+len(parts[1])+len(parts[2])+3:]
+						instance.Sign()
 						identity.Send(&instance)
 					}
 				}
@@ -190,15 +192,23 @@ func PostInstances(w http.ResponseWriter, r *http.Request) {
 	if err := r.Body.Close(); err != nil {
 		panic(err)
 	}
-	// if err := json.Unmarshal(body, &todo); err != nil {
-	//     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	//     w.WriteHeader(422) // unprocessable entity
-	//     if err := json.NewEncoder(w).Encode(err); err != nil {
-	//         panic(err)
-	//     }
-	// }
 
-	fmt.Println(">>> GOT", string(body))
+	var instance Instance = Instance{}
+	instance.SetPayloadFromJson(body)
 
+	body, err = instance.ToJSON()
+	if err == nil {
+		fmt.Println(">>> GOT", string(body))
+		valid, err := instance.Verify()
+		if err == nil {
+			if valid == true {
+				fmt.Println(">>> IS VALID")
+			} else {
+				fmt.Println(">>> IS *NOT* VALID")
+			}
+		} else {
+			fmt.Println(">>> error validating", err)
+		}
+	}
 	json.NewEncoder(w).Encode(self)
 }

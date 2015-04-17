@@ -179,7 +179,7 @@ func (s *Identity) GetURI() string {
 }
 
 func (s *Identity) Send(instance *Instance) (err error) {
-	data, err := json.Marshal(&instance)
+	data, err := json.Marshal(&instance.Payload)
 	if err == nil {
 		// var data []byte = []byte(str)
 		fmt.Printf("Sending '%s' to %s\n", string(data), s.GetURI())
