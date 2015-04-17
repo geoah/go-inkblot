@@ -34,15 +34,18 @@ type Identity struct {
 func FetchIdentity(uri string) (identity Identity, err error) {
 	fmt.Printf("Trying to fetch %s\n", uri)
 	identity = Identity{}
-	resp, err := http.Get(uri)
+	selfJSON, err := json.Marshal(&rt.self)
 	if err == nil {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		resp, err := http.Post(uri, "application/json", bytes.NewBuffer(selfJSON))
 		if err == nil {
-			fmt.Println(string(body))
-			err = json.Unmarshal(body, &identity)
-		} else {
-			fmt.Println("Got", identity)
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err == nil {
+				fmt.Println(string(body))
+				err = json.Unmarshal(body, &identity)
+			} else {
+				fmt.Println("Got", identity)
+			}
 		}
 	}
 	fmt.Println(identity, err)
@@ -145,8 +148,8 @@ func main() {
 
 	go func() {
 		router := mux.NewRouter().StrictSlash(true)
-		router.HandleFunc("/", Index)
-		// router.HandleFunc("/", PostIndex).Methods("POST")
+		// router.HandleFunc("/", Index).Methods("GET")
+		router.HandleFunc("/", PostIndex).Methods("POST")
 		router.HandleFunc("/instances", PostInstances).Methods("POST")
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", self.Port), router))
 	}()
@@ -182,10 +185,10 @@ func main() {
 	}
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("GET /")
-	json.NewEncoder(w).Encode(self)
-}
+// func Index(w http.ResponseWriter, r *http.Request) {
+// 	fmt.Println("GET /")
+// 	json.NewEncoder(w).Encode(self)
+// }
 
 func PostIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("POST /")
