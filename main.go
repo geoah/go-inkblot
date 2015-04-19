@@ -124,7 +124,7 @@ func main() {
 
 	go func() {
 		router := mux.NewRouter().StrictSlash(true)
-		// router.HandleFunc("/", Index).Methods("GET")
+		router.HandleFunc("/", Index).Methods("GET")
 		router.HandleFunc("/", PostIndex).Methods("POST")
 		router.HandleFunc("/instances", PostInstances).Methods("POST")
 		if localPort == 0 {
@@ -167,10 +167,10 @@ func main() {
 	}
 }
 
-// func Index(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Println("GET /")
-// 	json.NewEncoder(w).Encode(self)
-// }
+func Index(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GET /")
+	json.NewEncoder(w).Encode(self)
+}
 
 func PostIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("POST /")
