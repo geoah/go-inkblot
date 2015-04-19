@@ -61,15 +61,6 @@ func init() {
 	// flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
 	flag.BoolVar(&initIdentity, "init", false, "Create Identity")
 	flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
-
-	if os.Getenv("INK_IDENTITY_URL") != "" {
-		identityURL = os.Getenv("INK_IDENTITY_URL")
-	}
-
-	if os.Getenv("INK_PORT") != "" {
-		tempLocalPort, _ := strconv.Atoi(os.Getenv("INK_PORT"))
-		localPort = uint(tempLocalPort)
-	}
 }
 
 func main() {
@@ -92,6 +83,14 @@ func main() {
 		return
 	}
 
+	if os.Getenv("INK_IDENTITY_URL") != "" {
+		identityURL = os.Getenv("INK_IDENTITY_URL")
+	}
+	if os.Getenv("INK_PORT") != "" {
+		tempLocalPort, _ := strconv.Atoi(os.Getenv("INK_PORT"))
+		localPort = uint(tempLocalPort)
+	}
+
 	// Check that the id url has been set
 	if identityURL == "" {
 		log.Fatal("Missing id url")
@@ -104,7 +103,7 @@ func main() {
 	}
 
 	// Show own URI
-	fmt.Printf("Starting up as %s\n", self.GetURI())
+	fmt.Printf("Starting up on %d\n", localPort)
 
 	if initURIsString != "" {
 		initURIs = strings.Split(initURIsString, ",")
