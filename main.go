@@ -86,9 +86,17 @@ func main() {
 	if os.Getenv("INK_IDENTITY_URL") != "" {
 		identityURL = os.Getenv("INK_IDENTITY_URL")
 	}
+
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/", Index).Methods("GET")
+	router.HandleFunc("/", PostIndex).Methods("POST")
+	router.HandleFunc("/instances", PostInstances).Methods("POST")
+
 	if os.Getenv("PORT") != "" {
 		tempLocalPort, _ := strconv.Atoi(os.Getenv("PORT"))
 		localPort = uint(tempLocalPort)
+		fmt.Println("Fast forwarding HTTP server")
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
 	}
 
 	// Check that the id url has been set
@@ -122,16 +130,10 @@ func main() {
 		}
 	}
 
-	go func() {
-		router := mux.NewRouter().StrictSlash(true)
-		router.HandleFunc("/", Index).Methods("GET")
-		router.HandleFunc("/", PostIndex).Methods("POST")
-		router.HandleFunc("/instances", PostInstances).Methods("POST")
-		if localPort == 0 {
-			localPort = self.Port
-		}
+	if localPort == 0 {
+		localPort = self.Port
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
-	}()
+	}
 	fmt.Println("Ready...")
 
 	if os.Getenv("ENV") != "DEV" {
