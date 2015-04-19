@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -92,6 +91,39 @@ func main() {
 	router.HandleFunc("/", PostIndex).Methods("POST")
 	router.HandleFunc("/instances", PostInstances).Methods("POST")
 
+	go func() {
+		// Check that the id url has been set
+		if identityURL == "" {
+			log.Fatal("Missing id url")
+		}
+
+		// Fetch self id
+		self, err := FetchSelfIdentity(identityURL)
+		if err != nil {
+			panic(err)
+		}
+
+		// Show own URI
+		fmt.Printf("Starting up on %d\n", localPort)
+
+		if initURIsString != "" {
+			initURIs = strings.Split(initURIsString, ",")
+		}
+
+		rt = newRoutingTable(&self)
+		if len(initURIs) > 0 {
+			for _, uri := range initURIs {
+				var identity Identity
+				identity, err := FetchIdentity(uri)
+				if err != nil {
+					fmt.Printf("Could not fetch %s, error: %s\n", uri, err)
+				} else {
+					rt.insertIdentity(&identity)
+				}
+			}
+		}
+	}()
+
 	if os.Getenv("PORT") != "" {
 		tempLocalPort, _ := strconv.Atoi(os.Getenv("PORT"))
 		localPort = uint(tempLocalPort)
@@ -99,76 +131,12 @@ func main() {
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
 	}
 
-	// Check that the id url has been set
-	if identityURL == "" {
-		log.Fatal("Missing id url")
-	}
+	// if localPort == 0 {
+	// 	localPort = self.Port
+	// 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
+	// }
+	// fmt.Println("Ready...")
 
-	// Fetch self id
-	self, err := FetchSelfIdentity(identityURL)
-	if err != nil {
-		panic(err)
-	}
-
-	// Show own URI
-	fmt.Printf("Starting up on %d\n", localPort)
-
-	if initURIsString != "" {
-		initURIs = strings.Split(initURIsString, ",")
-	}
-
-	rt = newRoutingTable(&self)
-	if len(initURIs) > 0 {
-		for _, uri := range initURIs {
-			var identity Identity
-			identity, err := FetchIdentity(uri)
-			if err != nil {
-				fmt.Printf("Could not fetch %s, error: %s\n", uri, err)
-			} else {
-				rt.insertIdentity(&identity)
-			}
-		}
-	}
-
-	if localPort == 0 {
-		localPort = self.Port
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
-	}
-	fmt.Println("Ready...")
-
-	if os.Getenv("ENV") != "DEV" {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			line := scanner.Text()
-			switch line {
-			case ".":
-				break
-			case "ls":
-				fmt.Printf("Identities connected:\n")
-				for _, identity := range rt.identities {
-					fmt.Printf(" > %s %s\n", identity.GetURI(), identity.ID)
-				}
-			default:
-				var parts []string = strings.Split(line, " ")
-				if len(parts) > 3 {
-					if parts[0] == "send" {
-						identity, err := rt.Get(parts[1])
-						if err != nil {
-							fmt.Println(err)
-						} else {
-							var instance Instance = Instance{}
-							instance.Owner = rt.self
-							instance.Payload.Owner = rt.self.ID
-							instance.Payload.Schema = parts[2]
-							instance.Payload.Data = line[len(parts[0])+len(parts[1])+len(parts[2])+3:]
-							instance.Sign()
-							identity.Send(&instance)
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
