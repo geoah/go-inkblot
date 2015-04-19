@@ -134,32 +134,34 @@ func main() {
 	}()
 	fmt.Println("Ready...")
 
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		line := scanner.Text()
-		switch line {
-		case ".":
-			break
-		case "ls":
-			fmt.Printf("Identities connected:\n")
-			for _, identity := range rt.identities {
-				fmt.Printf(" > %s %s\n", identity.GetURI(), identity.ID)
-			}
-		default:
-			var parts []string = strings.Split(line, " ")
-			if len(parts) > 3 {
-				if parts[0] == "send" {
-					identity, err := rt.Get(parts[1])
-					if err != nil {
-						fmt.Println(err)
-					} else {
-						var instance Instance = Instance{}
-						instance.Owner = rt.self
-						instance.Payload.Owner = rt.self.ID
-						instance.Payload.Schema = parts[2]
-						instance.Payload.Data = line[len(parts[0])+len(parts[1])+len(parts[2])+3:]
-						instance.Sign()
-						identity.Send(&instance)
+	if os.Getenv("ENV") != "DEV" {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			line := scanner.Text()
+			switch line {
+			case ".":
+				break
+			case "ls":
+				fmt.Printf("Identities connected:\n")
+				for _, identity := range rt.identities {
+					fmt.Printf(" > %s %s\n", identity.GetURI(), identity.ID)
+				}
+			default:
+				var parts []string = strings.Split(line, " ")
+				if len(parts) > 3 {
+					if parts[0] == "send" {
+						identity, err := rt.Get(parts[1])
+						if err != nil {
+							fmt.Println(err)
+						} else {
+							var instance Instance = Instance{}
+							instance.Owner = rt.self
+							instance.Payload.Owner = rt.self.ID
+							instance.Payload.Schema = parts[2]
+							instance.Payload.Data = line[len(parts[0])+len(parts[1])+len(parts[2])+3:]
+							instance.Sign()
+							identity.Send(&instance)
+						}
 					}
 				}
 			}
