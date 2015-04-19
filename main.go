@@ -169,7 +169,7 @@ func main() {
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GET /")
-	json.NewEncoder(w).Encode(self)
+	json.NewEncoder(w).Encode(rt.self)
 }
 
 func PostIndex(w http.ResponseWriter, r *http.Request) {
