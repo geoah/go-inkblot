@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -49,6 +50,7 @@ var initIdentity bool = false
 
 var self Identity
 var initURIsString string = ""
+var localPort uint = 0
 var identityURL string = ""
 var initURIs []string = make([]string, 0)
 
@@ -59,6 +61,15 @@ func init() {
 	// flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
 	flag.BoolVar(&initIdentity, "init", false, "Create Identity")
 	flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
+
+	if os.Getenv("INK_IDENTITY_URL") != "" {
+		identityURL = os.Getenv("INK_IDENTITY_URL")
+	}
+
+	if os.Getenv("INK_PORT") != "" {
+		tempLocalPort, _ := strconv.Atoi(os.Getenv("INK_PORT"))
+		localPort = uint(tempLocalPort)
+	}
 }
 
 func main() {
@@ -117,7 +128,10 @@ func main() {
 		// router.HandleFunc("/", Index).Methods("GET")
 		router.HandleFunc("/", PostIndex).Methods("POST")
 		router.HandleFunc("/instances", PostInstances).Methods("POST")
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", self.Port), router))
+		if localPort == 0 {
+			localPort = self.Port
+		}
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
 	}()
 	fmt.Println("Ready...")
 
