@@ -86,8 +86,8 @@ func main() {
 	if os.Getenv("INK_IDENTITY_URL") != "" {
 		identityURL = os.Getenv("INK_IDENTITY_URL")
 	}
-	if os.Getenv("INK_PORT") != "" {
-		tempLocalPort, _ := strconv.Atoi(os.Getenv("INK_PORT"))
+	if os.Getenv("PORT") != "" {
+		tempLocalPort, _ := strconv.Atoi(os.Getenv("PORT"))
 		localPort = uint(tempLocalPort)
 	}
 
