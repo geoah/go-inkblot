@@ -13,10 +13,10 @@ import (
 )
 
 type Identity struct {
-	ID         string                 `json:"id"`
-	Hostname   string                 `json:"hostname"`
-	Port       uint                   `json:"port"`
-	UseSSL     bool                   `json:"ssl"`
+	ID       string `json:"id"`
+	Hostname string `json:"hostname"`
+	// Port       uint                   `json:"port"`
+	// UseSSL     bool                   `json:"ssl"`
 	PrivateJwk map[string]interface{} `json:"_jwk"`
 	PublicJwk  map[string]interface{} `json:"jwk"`
 }
@@ -157,7 +157,6 @@ func FetchSelfIdentity(uri string) (identity Identity, err error) {
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err == nil {
-			// fmt.Println(string(body))
 			err = json.Unmarshal(body, &identity)
 		} else {
 			fmt.Println("Got", identity)
@@ -168,13 +167,7 @@ func FetchSelfIdentity(uri string) (identity Identity, err error) {
 }
 
 func (s *Identity) GetURI() string {
-	var uri string = ""
-	if s.UseSSL == true {
-		uri += "https"
-	} else {
-		uri += "http"
-	}
-	uri += fmt.Sprintf("://%s:%d", s.Hostname, s.Port)
+	var uri string = fmt.Sprintf("https://%s", s.Hostname)
 	return uri
 }
 
