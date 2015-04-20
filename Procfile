@@ -1,1 +1,1 @@
-web: inkblot
+web: go-inkblot
