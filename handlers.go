@@ -66,3 +66,34 @@ func HandleIdentityInstancesPost(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(self)
 }
+
+func HandleOwnIdentities(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GET /identities")
+	json.NewEncoder(w).Encode(rt.identities)
+}
+
+func HandleOwnIdentitiesPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("POST /identities")
+
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		panic(err)
+	}
+	if err := r.Body.Close(); err != nil {
+		panic(err)
+	}
+	var identity Identity = Identity{}
+	if err := json.Unmarshal(body, &identity); err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(422) // unprocessable entity
+		if err := json.NewEncoder(w).Encode(err); err != nil {
+			panic(err)
+		}
+	} else {
+		identity, err = FetchIdentity(identity.GetURI())
+		if err == nil {
+			rt.insertIdentity(&identity)
+		}
+		json.NewEncoder(w).Encode(rt.self)
+	}
+}

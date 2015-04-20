@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -57,7 +56,7 @@ func init() {
 	// flag.UintVar(&self.Port, "port", 9000, "Port")
 	// flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
 	flag.BoolVar(&initIdentity, "init", false, "Create Identity")
-	flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
+	// flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
 }
 
 func main() {
@@ -88,6 +87,8 @@ func main() {
 	router.HandleFunc("/", HandlePublicIndex).Methods("GET")
 	router.HandleFunc("/", HandlePublicIndexPost).Methods("POST")
 	router.HandleFunc("/instances", HandleIdentityInstancesPost).Methods("POST")
+	router.HandleFunc("/identities", HandleOwnIdentities).Methods("GET")
+	router.HandleFunc("/identities", HandleOwnIdentitiesPost).Methods("POST")
 
 	go func() {
 		// Check that the id url has been set
@@ -104,22 +105,22 @@ func main() {
 		// Show own URI
 		fmt.Printf("Starting up on %d\n", localPort)
 
-		if initURIsString != "" {
-			initURIs = strings.Split(initURIsString, ",")
-		}
+		// if initURIsString != "" {
+		// 	initURIs = strings.Split(initURIsString, ",")
+		// }
 
 		rt = newRoutingTable(&self)
-		if len(initURIs) > 0 {
-			for _, uri := range initURIs {
-				var identity Identity
-				identity, err := FetchIdentity(uri)
-				if err != nil {
-					fmt.Printf("Could not fetch %s, error: %s\n", uri, err)
-				} else {
-					rt.insertIdentity(&identity)
-				}
-			}
-		}
+		// if len(initURIs) > 0 {
+		// 	for _, uri := range initURIs {
+		// 		var identity Identity
+		// 		identity, err := FetchIdentity(uri)
+		// 		if err != nil {
+		// 			fmt.Printf("Could not fetch %s, error: %s\n", uri, err)
+		// 		} else {
+		// 			rt.insertIdentity(&identity)
+		// 		}
+		// 	}
+		// }
 	}()
 
 	if os.Getenv("PORT") != "" {
