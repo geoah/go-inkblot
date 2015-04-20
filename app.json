@@ -1,0 +1,14 @@
+{
+  "name": "Inkblot",
+  "description": "Inkblot: Ink Prototype Identity Server",
+  "repository": "https://github.com/geoah/inkblot",
+  "logo": "https://node-js-sample.herokuapp.com/node.svg",
+  "keywords": ["ink"],
+  "success_url": "/init",
+  "env": {
+    "BUILDPACK_URL": "https://github.com/kr/heroku-buildpack-go.git"
+  },
+  "addons": [
+    "mongolab"
+  ]
+}
