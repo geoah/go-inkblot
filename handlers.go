@@ -114,7 +114,12 @@ func HandleIdentityInstancesPost(w http.ResponseWriter, r *http.Request) {
 
 func HandleOwnIdentities(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GET /identities")
-	json.NewEncoder(w).Encode(rt.identities)
+	var identities []Identity
+	err := db.C("settings").Find(bson.M{}).All(&identities)
+	if err != nil {
+		fmt.Println(err)
+	}
+	json.NewEncoder(w).Encode(identities)
 }
 
 func HandleOwnIdentitiesPost(w http.ResponseWriter, r *http.Request) {
@@ -136,9 +141,13 @@ func HandleOwnIdentitiesPost(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		identity, err = FetchIdentity(identity.GetURI())
-		if err == nil {
-			rt.insertIdentity(&identity)
+		// if err == nil {
+		// 	rt.insertIdentity(&identity)
+		// }
+		err = db.C("identities").Insert(&identity)
+		if err != nil {
+			fmt.Println(err)
 		}
-		json.NewEncoder(w).Encode(rt.self)
+		json.NewEncoder(w).Encode(identity)
 	}
 }
