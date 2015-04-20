@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,8 +10,16 @@ import (
 	"strconv"
 	"sync"
 
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+
 	"github.com/gorilla/mux"
 )
+
+type KV struct {
+	Key   string `bson:"_id"`
+	Value string `bson:"value"`
+}
 
 type routingTable struct {
 	self       *Identity
@@ -42,48 +49,37 @@ func (s *routingTable) Get(ID string) (*Identity, error) {
 }
 
 var rt *routingTable
-var initIdentity bool = false
+var db *mgo.Database
+
+// var initIdentity bool = false
 
 var self Identity
-var initURIsString string = ""
-var localPort uint = 0
-var identityURL string = ""
-var initURIs []string = make([]string, 0)
 
-func init() {
-	flag.StringVar(&identityURL, "id", "", "Identity URL")
-	// flag.StringVar(&self.Hostname, "hostname", "localhost", "Hostname")
-	// flag.UintVar(&self.Port, "port", 9000, "Port")
-	// flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
-	flag.BoolVar(&initIdentity, "init", false, "Create Identity")
-	// flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
-}
+// var initURIsString string = ""
+var localPort uint = 0
+
+// var identityURL string = ""
+// var initURIs []string = make([]string, 0)
+
+// func init() {
+// flag.StringVar(&identityURL, "id", "", "Identity URL")
+// flag.StringVar(&self.Hostname, "hostname", "localhost", "Hostname")
+// flag.UintVar(&self.Port, "port", 9000, "Port")
+// flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
+// flag.BoolVar(&initIdentity, "init", false, "Create Identity")
+// flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
+// }
 
 func main() {
 	// Parse flags
 	flag.Parse()
 
-	// Check if we need to init the Identity
-	if initIdentity == true {
-
-		// if self.Hostname == "" {
-		// 	log.Fatal("Missing hostname")
-		// }
-
-		var identity Identity = Identity{}
-		identity.Init()
-		selfJSON, err := json.Marshal(&identity)
-		if err == nil {
-			fmt.Println(string(selfJSON))
-		}
-		return
-	}
-
-	if os.Getenv("INK_IDENTITY_URL") != "" {
-		identityURL = os.Getenv("INK_IDENTITY_URL")
-	}
+	// if os.Getenv("INK_IDENTITY_URL") != "" {
+	// 	identityURL = os.Getenv("INK_IDENTITY_URL")
+	// }
 
 	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/init", HandlePublicInit).Methods("GET")
 	router.HandleFunc("/", HandlePublicIndex).Methods("GET")
 	router.HandleFunc("/", HandlePublicIndexPost).Methods("POST")
 	router.HandleFunc("/instances", HandleIdentityInstancesPost).Methods("POST")
@@ -92,15 +88,45 @@ func main() {
 
 	go func() {
 		// Check that the id url has been set
-		if identityURL == "" {
-			log.Fatal("Missing id url")
-		}
+		// if os.Getenv("INK_HOSTNAME") == "" {
+		// 	log.Fatal("Missing INK_HOSTNAME")
+		// }
 
 		// Fetch self id
-		self, err := FetchSelfIdentity(identityURL)
-		if err != nil {
-			panic(err)
+		// self, err := FetchSelfIdentity(identityURL)
+		// if err != nil {
+		// 	panic(err)
+		// }
+
+		if os.Getenv("MONGOLAB_URI") != "" {
+			session, err := mgo.Dial(os.Getenv("MONGOLAB_URI"))
+			if err != nil {
+				panic(err)
+			}
+			db = session.DB("") //.C("people")
+			// err = c.Insert(&Person{"Ale", "+55 53 8116 9639"},
+			// 	&Person{"Cla", "+55 53 8402 8510"})
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+			//
+
+			hostnameKv := KV{}
+			err = db.C("settings").Find(bson.M{"_id": "hostname"}).One(&hostnameKv)
+			if err != nil {
+				fmt.Println("You need to init this instance")
+			} else {
+				self = Identity{}
+				err := db.C("identities").Find(bson.M{"hostname": hostnameKv.Value}).One(&self)
+				if err == nil {
+					fmt.Println("Could not find identity")
+				}
+				// rt.self = &self
+			}
+		} else {
+			log.Fatal(errors.New("Missing db connection"))
 		}
+		//defer session.Close()
 
 		// Show own URI
 		fmt.Printf("Starting up on %d\n", localPort)

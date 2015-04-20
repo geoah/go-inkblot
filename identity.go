@@ -13,12 +13,12 @@ import (
 )
 
 type Identity struct {
-	ID       string `json:"id"`
-	Hostname string `json:"hostname"`
+	ID       string `json:"id" bson:"_id"`
+	Hostname string `json:"hostname" bson:"hostname"`
 	// Port       uint                   `json:"port"`
 	// UseSSL     bool                   `json:"ssl"`
-	PrivateJwk map[string]interface{} `json:"_jwk"`
-	PublicJwk  map[string]interface{} `json:"jwk"`
+	PrivateJwk map[string]interface{} `json:"-" bson:"_jwk"`
+	PublicJwk  map[string]interface{} `json:"jwk" bson:"jwk"`
 }
 
 func (s *Identity) Init() error {

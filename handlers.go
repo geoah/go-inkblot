@@ -5,8 +5,46 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
+
+	"gopkg.in/mgo.v2/bson"
 )
+
+func HandlePublicInit(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GET /init")
+
+	hostnameKv := KV{}
+	err := db.C("settings").Find(bson.M{"_id": "hostname"}).One(&hostnameKv)
+	if err == nil {
+		fmt.Println("Already active")
+		return
+	}
+
+	host, _, _ := net.SplitHostPort(r.Host)
+	var identity Identity = Identity{}
+	identity.Hostname = host
+	identity.Init()
+	fmt.Println(identity)
+	// selfJSON, err := json.Marshal(&identity)
+	// if err == nil {
+
+	err = db.C("identities").Insert(&identity)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	hostnameKv.Key = "hostname"
+	hostnameKv.Value = host
+	err = db.C("settings").Insert(&hostnameKv)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	rt.self = &identity
+	json.NewEncoder(w).Encode(rt.self)
+	// }
+}
 
 func HandlePublicIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GET /")
