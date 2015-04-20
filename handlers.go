@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 
 	"gopkg.in/mgo.v2/bson"
 )
@@ -21,7 +22,13 @@ func HandlePublicInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, _, _ := net.SplitHostPort(r.Host)
+	var host string = r.Host
+	if strings.Contains(host, ":") {
+		host, _, _ = net.SplitHostPort(host)
+	}
+
+	fmt.Println("Current hostname is ", host)
+
 	var identity Identity = Identity{}
 	identity.Hostname = host
 	identity.Init()
@@ -48,8 +55,6 @@ func HandlePublicInit(w http.ResponseWriter, r *http.Request) {
 
 func HandlePublicIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GET /")
-	host, _, _ := net.SplitHostPort(r.Host)
-	fmt.Println(r.Host, host)
 	json.NewEncoder(w).Encode(rt.self)
 }
 
