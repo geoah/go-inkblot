@@ -115,7 +115,7 @@ func HandleIdentityInstancesPost(w http.ResponseWriter, r *http.Request) {
 func HandleOwnIdentities(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GET /identities")
 	var identities []Identity
-	err := db.C("settings").Find(bson.M{}).All(&identities)
+	err := db.C("identities").Find(bson.M{}).All(&identities)
 	if err != nil {
 		fmt.Println(err)
 	}
