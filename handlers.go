@@ -36,14 +36,14 @@ func HandlePublicInit(w http.ResponseWriter, r *http.Request) {
 	// selfJSON, err := json.Marshal(&identity)
 	// if err == nil {
 
-	err = db.C("identities").Insert(&identity)
+	_, err = db.C("identities").UpsertId(identity.ID, &identity)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	hostnameKv.Key = "hostname"
 	hostnameKv.Value = host
-	err = db.C("settings").Insert(&hostnameKv)
+	_, err = db.C("settings").UpsertId(hostnameKv.Key, &hostnameKv)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -144,7 +144,7 @@ func HandleOwnIdentitiesPost(w http.ResponseWriter, r *http.Request) {
 		// if err == nil {
 		// 	rt.insertIdentity(&identity)
 		// }
-		err = db.C("identities").Insert(&identity)
+		_, err = db.C("identities").UpsertId(identity.ID, &identity)
 		if err != nil {
 			fmt.Println(err)
 		}
