@@ -17,8 +17,8 @@ import (
 )
 
 type KV struct {
-	Key   string `bson:"_id"`
-	Value string `bson:"value"`
+	Key   string `json:"key" bson:"_id"`
+	Value string `json:"value" bson:"value"`
 }
 
 type routingTable struct {
@@ -85,6 +85,7 @@ func main() {
 	router.HandleFunc("/instances", HandleIdentityInstancesPost).Methods("POST")
 	router.HandleFunc("/identities", HandleOwnIdentities).Methods("GET")
 	router.HandleFunc("/identities", HandleOwnIdentitiesPost).Methods("POST")
+	router.HandleFunc("/settings", HandleOwnSettings).Methods("GET")
 
 	go func() {
 		// Check that the id url has been set

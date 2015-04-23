@@ -155,3 +155,13 @@ func HandleOwnIdentitiesPost(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(identity)
 	}
 }
+
+func HandleOwnSettings(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GET /settings")
+	var settings []KV
+	err := db.C("settings").Find(bson.M{}).All(&settings)
+	if err != nil {
+		fmt.Println(err)
+	}
+	json.NewEncoder(w).Encode(settings)
+}
