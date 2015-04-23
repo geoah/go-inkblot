@@ -76,7 +76,11 @@ func HandlePublicIndexPost(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	} else {
-		rt.insertIdentity(&identity)
+		// rt.insertIdentity(&identity)
+		_, err = db.C("identities").UpsertId(identity.ID, &identity)
+		if err != nil {
+			fmt.Println(err)
+		}
 		json.NewEncoder(w).Encode(rt.self)
 	}
 }
