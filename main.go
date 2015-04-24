@@ -13,6 +13,8 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
+	"github.com/RangelReale/osin"
+	"github.com/RangelReale/osin/example"
 	"github.com/gorilla/mux"
 )
 
@@ -57,6 +59,7 @@ var self Identity
 
 // var initURIsString string = ""
 var localPort uint = 0
+var server *osin.Server
 
 // var identityURL string = ""
 // var initURIs []string = make([]string, 0)
@@ -69,6 +72,26 @@ var localPort uint = 0
 // flag.BoolVar(&initIdentity, "init", false, "Create Identity")
 // flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
 // }
+
+type MyServer struct {
+	r *mux.Router
+}
+
+func (s *MyServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	fmt.Println(">>>>> HTTP")
+	// if origin := req.Header.Get("Origin"); origin != "" {
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+	rw.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	rw.Header().Set("Access-Control-Allow-Headers",
+		"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	// }
+	// Stop here if its Preflighted OPTIONS request
+	if req.Method == "OPTIONS" {
+		return
+	}
+	// Lets Gorilla work
+	s.r.ServeHTTP(rw, req)
+}
 
 func main() {
 	// Parse flags
@@ -86,6 +109,95 @@ func main() {
 	router.HandleFunc("/identities", HandleOwnIdentities).Methods("GET")
 	router.HandleFunc("/identities", HandleOwnIdentitiesPost).Methods("POST")
 	router.HandleFunc("/settings", HandleOwnSettings).Methods("GET")
+
+	sconfig := osin.NewServerConfig()
+	sconfig.AllowedAuthorizeTypes = osin.AllowedAuthorizeType{osin.CODE, osin.TOKEN}
+	sconfig.AllowedAccessTypes = osin.AllowedAccessType{osin.AUTHORIZATION_CODE, osin.REFRESH_TOKEN, osin.PASSWORD, osin.CLIENT_CREDENTIALS, osin.ASSERTION}
+	sconfig.AllowGetAccessRequest = true
+	sconfig.ErrorStatusCode = 401
+
+	server = osin.NewServer(sconfig, NewTestStorage())
+
+	// Authorization code endpoint
+	router.HandleFunc("/authorize", func(w http.ResponseWriter, r *http.Request) {
+		resp := server.NewResponse()
+		defer resp.Close()
+
+		if ar := server.HandleAuthorizeRequest(resp, r); ar != nil {
+			if !example.HandleLoginPage(ar, w, r) {
+				return
+			}
+			ar.UserData = struct{ Login string }{Login: "test"}
+			ar.Authorized = true
+			server.FinishAuthorizeRequest(resp, r, ar)
+		}
+		if resp.IsError && resp.InternalError != nil {
+			fmt.Printf("ERROR: %s\n", resp.InternalError)
+		}
+		if !resp.IsError {
+			resp.Output["custom_parameter"] = 187723
+		}
+		osin.OutputJSON(resp, w, r)
+	})
+
+	// Access token endpoint
+	router.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		resp := server.NewResponse()
+		defer resp.Close()
+
+		if ar := server.HandleAccessRequest(resp, r); ar != nil {
+			switch ar.Type {
+			case osin.AUTHORIZATION_CODE:
+				ar.Authorized = true
+			case osin.REFRESH_TOKEN:
+				ar.Authorized = true
+			case osin.PASSWORD:
+				if ar.Username == "test" && ar.Password == "test" {
+					ar.Authorized = true
+				}
+			case osin.CLIENT_CREDENTIALS:
+				ar.Authorized = true
+			case osin.ASSERTION:
+				if ar.AssertionType == "urn:osin.example.complete" && ar.Assertion == "osin.data" {
+					ar.Authorized = true
+				}
+			}
+			server.FinishAccessRequest(resp, r, ar)
+		}
+		if resp.IsError && resp.InternalError != nil {
+			fmt.Printf("ERROR: %s\n", resp.InternalError)
+		}
+		if !resp.IsError {
+			resp.Output["custom_parameter"] = 19923
+		}
+		osin.OutputJSON(resp, w, r)
+	})
+
+	// Information endpoint
+	router.HandleFunc("/info", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		// Stop here if its Preflighted OPTIONS request
+		if r.Method == "OPTIONS" {
+			return
+		}
+
+		resp := server.NewResponse()
+		defer resp.Close()
+		fmt.Println(resp)
+		if r.Method == "GET" {
+			ir := server.HandleInfoRequest(resp, r)
+			if ir != nil {
+				server.FinishInfoRequest(resp, r, ir)
+			}
+			osin.OutputJSON(resp, w, r)
+		}
+	})
+
+	// r := mux.NewRouter()
+	http.Handle("/", &MyServer{router})
+	// http.ListenAndServe(":14000", nil)
 
 	go func() {
 		// Check that the id url has been set
