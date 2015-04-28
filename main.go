@@ -105,10 +105,11 @@ func main() {
 	router.HandleFunc("/init", HandlePublicInit).Methods("GET")
 	router.HandleFunc("/", HandlePublicIndex).Methods("GET")
 	router.HandleFunc("/", HandlePublicIndexPost).Methods("POST")
-	router.HandleFunc("/instances", HandleIdentityInstancesPost).Methods("POST")
-	router.HandleFunc("/identities", HandleOwnIdentities).Methods("GET")
-	router.HandleFunc("/identities", HandleOwnIdentitiesPost).Methods("POST")
-	router.HandleFunc("/settings", HandleOwnSettings).Methods("GET")
+	router.Handle("/instances", HandleOwnOrIdentity(http.HandlerFunc(HandleOwnInstancesPost), http.HandlerFunc(HandleIdentityInstancesPost))).Methods("POST")
+	router.Handle("/instances", http.HandlerFunc(HandleOwnInstances)).Methods("GET")
+	router.Handle("/identities", HandleOwn(http.HandlerFunc(HandleOwnIdentities))).Methods("GET")
+	router.Handle("/identities", HandleOwn(http.HandlerFunc(HandleOwnIdentitiesPost))).Methods("POST")
+	router.Handle("/settings", HandleOwn(http.HandlerFunc(HandleOwnSettings))).Methods("GET")
 
 	sconfig := osin.NewServerConfig()
 	sconfig.AllowedAuthorizeTypes = osin.AllowedAuthorizeType{osin.CODE, osin.TOKEN}
