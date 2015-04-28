@@ -85,6 +85,16 @@ func HandlePublicIndexPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func HandleOwnInstances(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GET /instances")
+	var instances []Instance
+	err := db.C("instances").Find(bson.M{}).All(&instances)
+	if err != nil {
+		fmt.Println(err)
+	}
+	json.NewEncoder(w).Encode(instances)
+}
+
 func HandleIdentityInstancesPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("POST /instances")
 
