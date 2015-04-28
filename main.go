@@ -176,24 +176,13 @@ func main() {
 
 	// Information endpoint
 	router.HandleFunc("/info", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		// Stop here if its Preflighted OPTIONS request
-		if r.Method == "OPTIONS" {
-			return
-		}
-
 		resp := server.NewResponse()
 		defer resp.Close()
-		fmt.Println(resp)
-		if r.Method == "GET" {
-			ir := server.HandleInfoRequest(resp, r)
-			if ir != nil {
-				server.FinishInfoRequest(resp, r, ir)
-			}
-			osin.OutputJSON(resp, w, r)
+		ir := server.HandleInfoRequest(resp, r)
+		if ir != nil {
+			server.FinishInfoRequest(resp, r, ir)
 		}
+		osin.OutputJSON(resp, w, r)
 	})
 
 	// r := mux.NewRouter()
