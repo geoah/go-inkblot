@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/RangelReale/osin"
+	"github.com/twinj/uuid"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -169,6 +170,47 @@ func HandleIdentityInstancesPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	json.NewEncoder(w).Encode(self)
+}
+
+func HandleOwnInstancesPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("POST /instances [OWN]")
+
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	if err != nil {
+		panic(err)
+	}
+	if err := r.Body.Close(); err != nil {
+		panic(err)
+	}
+
+	var instance Instance = Instance{}
+	instance.SetPayloadFromJson(body)
+	instance.Owner = &self
+	instance.ID = uuid.Formatter(uuid.NewV4(), uuid.CleanHyphen)
+	instance.Payload.ID = instance.ID
+	instance.Payload.Owner = instance.Owner.ID
+	instance.Sign()
+
+	_, err = db.C("instances").UpsertId(instance.ID, &instance)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	body, err = instance.ToJSON()
+	if err == nil {
+		fmt.Println(">>> GOT", string(body))
+		// valid, err := instance.Verify()
+		// if err == nil {
+		// 	if valid == true {
+		// 		fmt.Println(">>> IS VALID")
+		// 	} else {
+		// 		fmt.Println(">>> IS *NOT* VALID")
+		// 	}
+		// } else {
+		// 	fmt.Println(">>> error validating", err)
+		// }
+	}
+	json.NewEncoder(w).Encode(body)
 }
 
 func HandleOwnIdentities(w http.ResponseWriter, r *http.Request) {
