@@ -221,8 +221,8 @@ func main() {
 			} else {
 				self = Identity{}
 				err := db.C("identities").Find(bson.M{"hostname": hostnameKv.Value}).One(&self)
-				if err == nil {
-					fmt.Println("Could not find identity")
+				if err != nil {
+					log.Fatal("Could not find identity")
 				}
 				// rt.self = &self
 			}
