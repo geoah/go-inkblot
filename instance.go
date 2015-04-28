@@ -129,11 +129,13 @@ func (s *Instance) Sign() error {
 }
 
 func (s *Instance) Verify() (bool, error) {
-	jws, _ := s.GetProperJWS()
-	_, err := jws.Verify()
+	jws, err := s.GetProperJWS()
 	if err != nil {
 		return false, err
-	} else {
-		return true, nil
 	}
+	_, err = jws.Verify()
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
