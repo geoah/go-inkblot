@@ -45,18 +45,18 @@ func HandleOwnOrIdentity(nextOwn http.Handler, nextIdentity http.Handler) http.H
 	})
 }
 
-func HandleOwn(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := server.NewResponse()
-		defer resp.Close()
-		ir := server.HandleInfoRequest(resp, r)
-		if ir != nil {
-			next.ServeHTTP(w, r)
-		} else {
-			osin.OutputJSON(resp, w, r)
-		}
-	})
-}
+// func HandleOwn(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		resp := server.NewResponse()
+// 		defer resp.Close()
+// 		ir := server.HandleInfoRequest(resp, r)
+// 		if ir != nil {
+// 			next.ServeHTTP(w, r)
+// 		} else {
+// 			osin.OutputJSON(resp, w, r)
+// 		}
+// 	})
+// }
 
 func HandlePublicInit(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GET /init")
