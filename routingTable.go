@@ -11,9 +11,8 @@ type routingTable struct {
 	lock       *sync.RWMutex
 }
 
-func newRoutingTable(selfIdentity *Identity) *routingTable {
+func newRoutingTable() *routingTable {
 	return &routingTable{
-		self:       selfIdentity,
 		identities: map[string]*Identity{},
 		lock:       new(sync.RWMutex),
 	}
