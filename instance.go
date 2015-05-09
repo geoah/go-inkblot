@@ -14,46 +14,46 @@ func joseBase64UrlEncode(b []byte) []byte {
 }
 
 type jsHeader struct {
-	JWK       json.RawMessage `json:"jwk,omitempty"`
-	Algorithm string          `json:"alg"`
-	Chain     []string        `json:"x5c,omitempty"`
+	JWK       json.RawMessage `json:"jwk,omitempty" bson:"jwk,omitempty"`
+	Algorithm string          `json:"blg" json:"alg"`
+	Chain     []string        `json:"x5c,omitempty" bson:"x5c,omitempty"`
 }
 
 type jsSignature struct {
-	Header    jsHeader `json:"header"`
-	Signature string   `json:"signature"`
-	Protected string   `json:"protected"`
+	Header    jsHeader `json:"header" bson:"header"`
+	Signature string   `json:"signature" bson:"signature"`
+	Protected string   `json:"protected" bson:"protected"`
 }
 
 // JSONSignature represents a signature of a json object.
 type JSONSignature struct {
-	Payload    string        `json:"payload"`
-	Signatures []jsSignature `json:"signatures"`
+	Payload    string        `json:"payload" bson:"payload"`
+	Signatures []jsSignature `json:"signatures" bson:"signatures"`
 	// indent       string
 	// formatLength int
 	// formatTail   []byte
 }
 
 type PayloadLibtrust struct {
-	Payload    string      `json:"payload"`
-	Signatures interface{} `json:"signatures,omitempty"`
+	Payload    string      `json:"payload" bson:"payload"`
+	Signatures interface{} `json:"signatures,omitempty" bson:"signatures,omitempty"`
 }
 
 type PayloadIdentities struct {
-	Archive bool `json:"archive"`
-	Modify  bool `json:"modify"`
-	Remove  bool `json:"remove"`
+	Archive bool `json:"archive" bson:"archive"`
+	Modify  bool `json:"modify" bson:"modify"`
+	Remove  bool `json:"remove" bson:"remove"`
 }
 
 type Payload struct {
-	ID          string `json:"id"`
-	Owner       string `json:"owner"`
+	ID          string `json:"id" bson:"id"`
+	Owner       string `json:"owner" bson:"owner"`
 	Permissions struct {
-		Identities map[string]PayloadIdentities `json:"identities"`
-		Public     bool                         `json:"public"`
-	} `json:"permissions"`
-	Schema string `json:"schema"`
-	Data   string `json:"data"`
+		Identities map[string]PayloadIdentities `json:"identities" bson:"identities"`
+		Public     bool                         `json:"public" bson:"public"`
+	} `json:"permissions" bson:"permissions"`
+	Schema string `json:"schema" bson:"schema"`
+	Data   string `json:"data" bson:"data"`
 	// Version struct {
 	// 	App struct {
 	// 		Name    string `json:"name"`
@@ -67,7 +67,7 @@ type Payload struct {
 	// 	Removed  uint64 `json:"removed"`
 	// 	Updated  uint64 `json:"updated"`
 	// } `json:"version"`
-	Signatures []jsSignature `json:"signatures,omitempty"`
+	Signatures []jsSignature `json:"signatures,omitempty" bson:"signatures,omitempty"`
 }
 
 func (s *Payload) ToJSON() ([]byte, error) {
@@ -76,8 +76,9 @@ func (s *Payload) ToJSON() ([]byte, error) {
 }
 
 type Instance struct {
-	Owner   *Identity `json:"owner"`
-	Payload Payload   `json:"payload"`
+	ID      string    `json:"owner" bson:"owner"`
+	Owner   *Identity `json:"owner" bson:"owner"`
+	Payload Payload   `json:"payload" bson:"payload"`
 }
 
 func (s *Instance) ToJSON() ([]byte, error) {
@@ -129,11 +130,13 @@ func (s *Instance) Sign() error {
 }
 
 func (s *Instance) Verify() (bool, error) {
-	jws, _ := s.GetProperJWS()
-	_, err := jws.Verify()
+	jws, err := s.GetProperJWS()
 	if err != nil {
 		return false, err
-	} else {
-		return true, nil
 	}
+	_, err = jws.Verify()
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

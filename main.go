@@ -7,13 +7,14 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"sync"
+	"time"
 
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"labix.org/v2/mgo"
+	"labix.org/v2/mgo/bson"
 
-	"github.com/gorilla/mux"
+	"github.com/RangelReale/osin"
+	"github.com/StephanDollberg/go-json-rest-middleware-jwt"
+	"github.com/ant0ine/go-json-rest/rest"
 )
 
 type KV struct {
@@ -21,146 +22,113 @@ type KV struct {
 	Value string `json:"value" bson:"value"`
 }
 
-type routingTable struct {
-	self       *Identity
-	identities map[string]*Identity
-	lock       *sync.RWMutex
-}
-
-func newRoutingTable(selfIdentity *Identity) *routingTable {
-	return &routingTable{
-		self:       selfIdentity,
-		identities: map[string]*Identity{},
-		lock:       new(sync.RWMutex),
-	}
-}
-
-func (s *routingTable) insertIdentity(identity *Identity) error {
-	// rt.identities = append(rt.identities, identity)
-	s.identities[identity.ID] = identity
-	return nil
-}
-
-func (s *routingTable) Get(ID string) (*Identity, error) {
-	if identity, ok := s.identities[ID]; ok {
-		return identity, nil
-	}
-	return nil, errors.New("Does not exist")
-}
-
-var rt *routingTable
+var rt *routingTable = newRoutingTable()
+var mgoSession *mgo.Session
 var db *mgo.Database
 
-// var initIdentity bool = false
+// var self Identity
+var server *osin.Server
 
-var self Identity
+func addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-// var initURIsString string = ""
-var localPort uint = 0
+		fmt.Println(">>>>> HTTP")
+		// if origin := req.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		// }
+		// Stop here if its Preflighted OPTIONS request
+		if r.Method != "OPTIONS" {
+			fn.ServeHTTP(w, r)
+		}
 
-// var identityURL string = ""
-// var initURIs []string = make([]string, 0)
-
-// func init() {
-// flag.StringVar(&identityURL, "id", "", "Identity URL")
-// flag.StringVar(&self.Hostname, "hostname", "localhost", "Hostname")
-// flag.UintVar(&self.Port, "port", 9000, "Port")
-// flag.BoolVar(&self.UseSSL, "ssl", false, "SSL")
-// flag.BoolVar(&initIdentity, "init", false, "Create Identity")
-// flag.StringVar(&initURIsString, "ids", "", "Initial Identities to connect to")
-// }
+	}
+}
 
 func main() {
 	// Parse flags
 	flag.Parse()
 
-	// if os.Getenv("INK_IDENTITY_URL") != "" {
-	// 	identityURL = os.Getenv("INK_IDENTITY_URL")
-	// }
+	var err error
+	mgoSession, err = mgo.Dial(getenvOrDefault("MONGOLAB_URI", "localhost"))
+	if mgoSession == nil || err != nil {
+		panic(err)
+	}
 
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/init", HandlePublicInit).Methods("GET")
-	router.HandleFunc("/", HandlePublicIndex).Methods("GET")
-	router.HandleFunc("/", HandlePublicIndexPost).Methods("POST")
-	router.HandleFunc("/instances", HandleIdentityInstancesPost).Methods("POST")
-	router.HandleFunc("/identities", HandleOwnIdentities).Methods("GET")
-	router.HandleFunc("/identities", HandleOwnIdentitiesPost).Methods("POST")
-	router.HandleFunc("/settings", HandleOwnSettings).Methods("GET")
+	api := rest.NewApi()
+	statusMw := &rest.StatusMiddleware{}
+	api.Use(statusMw)
+	api.Use(rest.DefaultDevStack...)
+
+	jwtMiddleware := &jwt.JWTMiddleware{
+		Key:        []byte("foobar"),
+		Realm:      "jwt auth",
+		Timeout:    time.Hour,
+		MaxRefresh: time.Hour * 24,
+		Authenticator: func(userId string, password string) bool {
+			return userId == "user" && password == "user"
+		},
+		SigningAlgorithm: "HS256",
+	}
+
+	jwtMiddlewareOptionally := &rest.IfMiddleware{
+		Condition: func(request *rest.Request) bool {
+			return request.Header.Get("Authorization") != ""
+		},
+		IfTrue: jwtMiddleware,
+	}
+
+	router, err := rest.MakeRouter(
+		rest.Post("/login", jwtMiddleware.LoginHandler),
+		rest.Get("/refresh_token", jwtMiddleware.RefreshHandler),
+		rest.Get("/init", HandlePublicInit),
+		rest.Get("/", jwtMiddlewareOptionally.MiddlewareFunc(HandlePublicIndex)),
+		rest.Post("/", HandlePublicIndexPost),
+		rest.Post("/instances", HandleOwnInstancesPost),
+		// rest.HandleFunc("/instances", HandleIdentityInstancesPost).Methods("SYNC")
+		rest.Get("/instances", HandleOwnInstances),
+		rest.Get("/identities", jwtMiddlewareOptionally.MiddlewareFunc(HandleOwnIdentities)),
+		rest.Post("/identities", HandleOwnIdentitiesPost),
+		rest.Get("/settings", HandleOwnSettings),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	api.SetApp(router)
 
 	go func() {
-		// Check that the id url has been set
-		// if os.Getenv("INK_HOSTNAME") == "" {
-		// 	log.Fatal("Missing INK_HOSTNAME")
-		// }
-
-		// Fetch self id
-		// self, err := FetchSelfIdentity(identityURL)
-		// if err != nil {
-		// 	panic(err)
-		// }
-
 		if os.Getenv("MONGOLAB_URI") != "" {
-			session, err := mgo.Dial(os.Getenv("MONGOLAB_URI"))
-			if err != nil {
-				panic(err)
-			}
-			db = session.DB("") //.C("people")
-			// err = c.Insert(&Person{"Ale", "+55 53 8116 9639"},
-			// 	&Person{"Cla", "+55 53 8402 8510"})
-			// if err != nil {
-			// 	log.Fatal(err)
-			// }
-			//
-
+			db = mgoSession.DB("") //.C("people")
 			hostnameKv := KV{}
 			err = db.C("settings").Find(bson.M{"_id": "hostname"}).One(&hostnameKv)
 			if err != nil {
 				fmt.Println("You need to init this instance")
 			} else {
-				self = Identity{}
+				fmt.Println("Found setting for", hostnameKv.Value)
+				self := Identity{}
 				err := db.C("identities").Find(bson.M{"hostname": hostnameKv.Value}).One(&self)
-				if err == nil {
-					fmt.Println("Could not find identity")
+				if err != nil {
+					log.Fatal("Could not find identity")
+				} else {
+					rt.self = &self
 				}
-				// rt.self = &self
 			}
 		} else {
 			log.Fatal(errors.New("Missing db connection"))
 		}
-		//defer session.Close()
-
-		// Show own URI
-		fmt.Printf("Starting up on %d\n", localPort)
-
-		// if initURIsString != "" {
-		// 	initURIs = strings.Split(initURIsString, ",")
-		// }
-
-		rt = newRoutingTable(&self)
-		// if len(initURIs) > 0 {
-		// 	for _, uri := range initURIs {
-		// 		var identity Identity
-		// 		identity, err := FetchIdentity(uri)
-		// 		if err != nil {
-		// 			fmt.Printf("Could not fetch %s, error: %s\n", uri, err)
-		// 		} else {
-		// 			rt.insertIdentity(&identity)
-		// 		}
-		// 	}
-		// }
 	}()
 
-	if os.Getenv("PORT") != "" {
-		tempLocalPort, _ := strconv.Atoi(os.Getenv("PORT"))
-		localPort = uint(tempLocalPort)
-		fmt.Println("Fast forwarding HTTP server")
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
+	port := fmt.Sprintf(":%v", getenvOrDefault("PORT", "3000"))
+	log.Fatal(http.ListenAndServe(port, api.MakeHandler()))
+}
+
+func getenvOrDefault(key, def string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return def
 	}
-
-	// if localPort == 0 {
-	// 	localPort = self.Port
-	// 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", localPort), router))
-	// }
-	// fmt.Println("Ready...")
-
+	return value
 }
