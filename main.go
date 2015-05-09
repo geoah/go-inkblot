@@ -12,7 +12,6 @@ import (
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 
-	"github.com/RangelReale/osin"
 	"github.com/StephanDollberg/go-json-rest-middleware-jwt"
 	"github.com/ant0ine/go-json-rest/rest"
 )
@@ -25,27 +24,6 @@ type KV struct {
 var rt *routingTable = newRoutingTable()
 var mgoSession *mgo.Session
 var db *mgo.Database
-
-// var self Identity
-var server *osin.Server
-
-func addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		fmt.Println(">>>>> HTTP")
-		// if origin := req.Header.Get("Origin"); origin != "" {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers",
-			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		// }
-		// Stop here if its Preflighted OPTIONS request
-		if r.Method != "OPTIONS" {
-			fn.ServeHTTP(w, r)
-		}
-
-	}
-}
 
 func main() {
 	// Parse flags
@@ -61,6 +39,17 @@ func main() {
 	statusMw := &rest.StatusMiddleware{}
 	api.Use(statusMw)
 	api.Use(rest.DefaultDevStack...)
+	api.Use(&rest.CorsMiddleware{
+		RejectNonCorsRequests: false,
+		OriginValidator: func(origin string, request *rest.Request) bool {
+			return true //origin == "http://my.other.host"
+		},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowedHeaders: []string{
+			"Accept", "Authorization", "Content-Type", "X-Custom-Header", "Origin"},
+		AccessControlAllowCredentials: true,
+		AccessControlMaxAge:           3600,
+	})
 
 	jwtMiddleware := &jwt.JWTMiddleware{
 		Key:        []byte("foobar"),
