@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
@@ -24,43 +23,11 @@ type KV struct {
 	Value string `json:"value" bson:"value"`
 }
 
-type routingTable struct {
-	self       *Identity
-	identities map[string]*Identity
-	lock       *sync.RWMutex
-}
-
-func newRoutingTable(selfIdentity *Identity) *routingTable {
-	return &routingTable{
-		self:       selfIdentity,
-		identities: map[string]*Identity{},
-		lock:       new(sync.RWMutex),
-	}
-}
-
-func (s *routingTable) insertIdentity(identity *Identity) error {
-	// rt.identities = append(rt.identities, identity)
-	s.identities[identity.ID] = identity
-	return nil
-}
-
-func (s *routingTable) Get(ID string) (*Identity, error) {
-	if identity, ok := s.identities[ID]; ok {
-		return identity, nil
-	}
-	return nil, errors.New("Does not exist")
-}
-
 var rt *routingTable
 var mgoSession *mgo.Session
 var db *mgo.Database
 
-// var initIdentity bool = false
-
 var self Identity
-
-// var initURIsString string = ""
-var localPort uint = 0
 var server *osin.Server
 
 func addDefaultHeaders(fn http.HandlerFunc) http.HandlerFunc {
@@ -121,7 +88,6 @@ func main() {
 }
 
 func setupOAuth(router *mux.Router) *oAuthHandler {
-	fmt.Println("000", mgoSession)
 	oAuth := NewOAuthHandler(mgoSession, getenvOrDefault("MONGOLAB_DBNAME", ""))
 	if _, err := oAuth.Storage.GetClient("1234"); err != nil {
 		if _, err := setClient1234(oAuth.Storage); err != nil {
