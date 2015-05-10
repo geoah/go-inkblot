@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"strings"
 
 	"github.com/ant0ine/go-json-rest/rest"
@@ -13,18 +13,13 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const (
-	E_INVALID_REQUEST           string = "invalid_request"
-	E_UNAUTHORIZED_CLIENT              = "unauthorized_client"
-	E_ACCESS_DENIED                    = "access_denied"
-	E_UNSUPPORTED_RESPONSE_TYPE        = "unsupported_response_type"
-	E_INVALID_SCOPE                    = "invalid_scope"
-	E_SERVER_ERROR                     = "server_error"
-	E_TEMPORARILY_UNAVAILABLE          = "temporarily_unavailable"
-	E_UNSUPPORTED_GRANT_TYPE           = "unsupported_grant_type"
-	E_INVALID_GRANT                    = "invalid_grant"
-	E_INVALID_CLIENT                   = "invalid_client"
-)
+func unauthorized(w rest.ResponseWriter) {
+	rest.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+}
+
+func unprocessable(w rest.ResponseWriter) {
+	rest.Error(w, "Unprocessable", 422)
+}
 
 func HandlePublicInit(w rest.ResponseWriter, r *rest.Request) {
 	fmt.Println("GET /init")
@@ -80,18 +75,10 @@ func HandlePublicIndex(w rest.ResponseWriter, r *rest.Request) {
 func HandlePublicIndexPost(w rest.ResponseWriter, r *rest.Request) {
 	fmt.Println("POST /")
 
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-	if err != nil {
-		panic(err)
-	}
-	if err := r.Body.Close(); err != nil {
-		panic(err)
-	}
 	var identity Identity = Identity{}
-	if err := json.Unmarshal(body, &identity); err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(422) // unprocessable entity
-		w.WriteJson("nop")
+	err := r.DecodeJsonPayload(&identity)
+	if err != nil {
+		unprocessable(w)
 	} else {
 		// rt.insertIdentity(&identity)
 		_, err = db.C("identities").UpsertId(identity.ID, &identity)
@@ -197,15 +184,9 @@ func HandleOwnIdentities(w rest.ResponseWriter, r *rest.Request) {
 func HandleOwnIdentitiesPost(w rest.ResponseWriter, r *rest.Request) {
 	fmt.Println("POST /identities")
 
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-	if err != nil {
-		panic(err)
-	}
-	if err := r.Body.Close(); err != nil {
-		panic(err)
-	}
 	var identity Identity = Identity{}
-	if err := json.Unmarshal(body, &identity); err != nil {
+	err := r.DecodeJsonPayload(&identity)
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(422) // unprocessable entity
 		w.WriteJson("nop")
