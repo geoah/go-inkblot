@@ -1,5 +1,9 @@
 # Inkblot
 
+This is a proof of concept identity server for [ink](protocol.ink).
+
+## Deployment
+
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 ## CLI
