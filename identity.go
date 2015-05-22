@@ -149,23 +149,6 @@ func FetchIdentity(uri string) (identity Identity, err error) {
 	return identity, err
 }
 
-func FetchSelfIdentity(uri string) (identity Identity, err error) {
-	fmt.Printf("Trying to fetch %s\n", uri)
-	identity = Identity{}
-	resp, err := http.Get(uri)
-	if err == nil {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err == nil {
-			err = json.Unmarshal(body, &identity)
-		} else {
-			fmt.Println("Got", identity)
-		}
-	}
-	// fmt.Println(identity, err)
-	return identity, err
-}
-
 func (s *Identity) GetURI() string {
 	var uri string = fmt.Sprintf("https://%s", s.Hostname)
 	return uri
