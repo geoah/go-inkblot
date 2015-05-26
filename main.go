@@ -90,6 +90,7 @@ func main() {
 
 	http.Handle("/", api.MakeHandler())
 	http.Handle("/setup", http.StripPrefix("/setup", http.FileServer(http.Dir("./static/setup"))))
+	http.Handle("/auth", http.StripPrefix("/auth", http.FileServer(http.Dir("./static/auth"))))
 
 	go func() {
 		if os.Getenv("MONGOLAB_URI") != "" {
