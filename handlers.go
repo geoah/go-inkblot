@@ -14,6 +14,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+func clientError(w rest.ResponseWriter, errorString string) {
+	rest.Error(w, errorString, http.StatusBadRequest)
+}
+
 func internal(w rest.ResponseWriter, errorString string) {
 	rest.Error(w, errorString, http.StatusInternalServerError)
 }
@@ -221,6 +225,10 @@ func HandleOwnIdentitiesPost(w rest.ResponseWriter, r *rest.Request) {
 		w.WriteHeader(422) // unprocessable entity
 		w.WriteJson("nop")
 	} else {
+		if identity.Hostname == "" {
+			clientError(w, "Missing hostname")
+			return
+		}
 		identity, err = FetchIdentity(identity.GetURI())
 		// if err == nil {
 		// 	rt.insertIdentity(&identity)
