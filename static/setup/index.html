@@ -42,14 +42,17 @@
             </div>
 
     			</form>
-          <hr>
+
           <div class="alert alert-success" ng-show="success">
             Congratulations this identity is now yours. - Have fun.
           </div>
+
           <div class="alert alert-danger" ng-show="error == 401">
             This identity is already registered.
           </div>
+
           <pre ng-if="response">{{ response | json }}</pre>
+
         </section>
       </div>
     </div>
