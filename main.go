@@ -72,7 +72,7 @@ func main() {
 	router, err := rest.MakeRouter(
 		rest.Post("/login", jwtMiddleware.LoginHandler),
 		rest.Get("/refresh_token", jwtMiddleware.RefreshHandler),
-		rest.Get("/init", HandlePublicInit),
+		rest.Post("/register", HandlePublicRegisterPost),
 		rest.Get("/", jwtMiddlewareOptionally.MiddlewareFunc(HandlePublicIndex)),
 		rest.Post("/", HandlePublicIndexPost),
 		rest.Post("/instances", HandleOwnInstancesPost),
@@ -87,6 +87,9 @@ func main() {
 	}
 
 	api.SetApp(router)
+
+	http.Handle("/", api.MakeHandler())
+	http.Handle("/setup", http.StripPrefix("/setup", http.FileServer(http.Dir("./static/setup"))))
 
 	go func() {
 		if os.Getenv("MONGOLAB_URI") != "" {
@@ -111,7 +114,7 @@ func main() {
 	}()
 
 	port := fmt.Sprintf(":%v", getenvOrDefault("PORT", "3000"))
-	log.Fatal(http.ListenAndServe(port, api.MakeHandler()))
+	log.Fatal(http.ListenAndServe(port, nil))
 }
 
 func getenvOrDefault(key, def string) string {

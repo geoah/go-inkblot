@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+func internal(w rest.ResponseWriter, errorString string) {
+	rest.Error(w, errorString, http.StatusInternalServerError)
+}
+
 func unauthorized(w rest.ResponseWriter) {
 	rest.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 }
@@ -21,13 +26,26 @@ func unprocessable(w rest.ResponseWriter) {
 	rest.Error(w, "Unprocessable", 422)
 }
 
-func HandlePublicInit(w rest.ResponseWriter, r *rest.Request) {
-	fmt.Println("GET /init")
+func HandlePublicRegisterPost(w rest.ResponseWriter, r *rest.Request) {
+	fmt.Println("POST /setup")
 
 	hostnameKv := KV{}
 	err := db.C("settings").Find(bson.M{"_id": "hostname"}).One(&hostnameKv)
 	if err == nil {
-		fmt.Println("Already active")
+		unauthorized(w)
+		return
+	}
+
+	type SetupData struct {
+		Password  string `json:"password"`
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
+	}
+	setupData := SetupData{}
+	err = r.DecodeJsonPayload(&setupData)
+
+	if err != nil {
+		unprocessable(w)
 		return
 	}
 
@@ -40,6 +58,14 @@ func HandlePublicInit(w rest.ResponseWriter, r *rest.Request) {
 
 	var identity Identity = Identity{}
 	identity.Hostname = host
+	identity.FirstName = setupData.FirstName
+	identity.LastName = setupData.LastName
+
+	h := sha1.New()
+	h.Write([]byte(setupData.Password))
+	passhash := h.Sum(nil)
+
+	identity.Passhash = fmt.Sprintf("%x", passhash)
 	identity.Init()
 	fmt.Println(identity)
 	// selfJSON, err := json.Marshal(&identity)
@@ -48,6 +74,8 @@ func HandlePublicInit(w rest.ResponseWriter, r *rest.Request) {
 	_, err = db.C("identities").UpsertId(identity.ID, &identity)
 	if err != nil {
 		fmt.Println(err)
+		internal(w, "Could not insert identity")
+		return
 	}
 
 	hostnameKv.Key = "hostname"
@@ -55,6 +83,8 @@ func HandlePublicInit(w rest.ResponseWriter, r *rest.Request) {
 	_, err = db.C("settings").UpsertId(hostnameKv.Key, &hostnameKv)
 	if err != nil {
 		fmt.Println(err)
+		internal(w, "Could not insert setting")
+		return
 	}
 
 	rt.self = &identity

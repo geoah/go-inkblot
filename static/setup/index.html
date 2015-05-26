@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="identityApp">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <style>
+
+    </style>
+  </head>
+  <body>
+
+    <div class="container" ng-controller="LoginController">
+      <div class="container-fluid">
+          <section class="container">
+      		<div class="container-page">
+      			<form class="col-md-6 col-md-offset-3" ng-submit="register()">
+      				<h3 class="dark-grey">Registration</h3>
+
+              <p class="alert alert-warning">
+                Please make sure that you are accessing the setup from the hostname you would like to use.
+              </p>
+
+      				<div class="form-group col-lg-6">
+      					<label>First Name</label>
+      					<input type="" ng-model="identity.firstName" class="form-control">
+      				</div>
+
+      				<div class="form-group col-lg-6">
+      					<label>Last Name</label>
+      					<input type="" ng-model="identity.lastName" class="form-control">
+      				</div>
+
+      				<div class="form-group col-lg-12">
+      					<label>Password</label>
+      					<input type="password" ng-model="identity.password" class="form-control">
+      				</div>
+
+      				<!-- <div class="form-group col-lg-6">
+      				  <label>Repeat Password</label>
+      				  <input type="password" name="" class="form-control">
+      				</div> -->
+
+      				<!-- <div class="form-group col-lg-6">
+      				  <label>Email Address</label>
+      				  <input type="" name="" class="form-control">
+      				</div> -->
+
+      				<!-- <div class="form-group col-lg-6">
+      				  <label>Repeat Email Address</label>
+      				  <input type="" name="" class="form-control">
+      				</div> -->
+
+      				<!-- <div class="col-sm-6">
+      				  <input type="checkbox" class="checkbox" />Sigh up for our newsletter
+      				</div> -->
+
+      				<!-- <div class="col-sm-6">
+      				  <input type="checkbox" class="checkbox" />Send notifications to this email
+      				</div> -->
+
+              <div class="form-group col-lg-12">
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+              </div>
+
+      			</form>
+
+      		</div>
+      	</section>
+      </div>
+      <hr>
+      <div class="alert alert-success" ng-show="success">
+        Congratulations this identity is now yours. - Have fun.
+      </div>
+      <div class="alert alert-danger" ng-show="error == 401">
+        This identity is already registered.
+      </div>
+      <pre ng-if="response">{{ response | json }}</pre>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+    <script>
+    // http://localhost:8000/setup/?target=http:%2F%2Flocalhost:8000%2Finfo%2F%3Ftoken%3D
+    angular.module('identityApp', [])
+    .config(['$locationProvider', function($locationProvider) {
+      // Enable html5Mode in order to make query params play nice since we have no routing
+      $locationProvider.html5Mode({
+        enabled: true,
+        requireBase: false
+      });
+    }])
+    .controller('LoginController', ['$scope', '$http', '$location', '$window', function($scope, $http, $location, $window) {
+      $scope.register = function() {
+        $http.post('/register', $scope.identity)
+        .success(function(data, status) {
+          // $window.location = $location.search().target + data.token;
+          $scope.response = data;
+          $scope.success = true;
+        })
+        .error(function(data, status) {
+          // alert(status);
+          $scope.response = data;
+          $scope.error = status;
+        });
+      };
+    }]);
+    </script>
+  </body>
+</html>

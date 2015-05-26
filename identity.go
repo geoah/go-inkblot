@@ -19,6 +19,9 @@ type Identity struct {
 	// UseSSL     bool                   `json:"ssl"`
 	PrivateJwk map[string]interface{} `json:"-" bson:"_jwk"`
 	PublicJwk  map[string]interface{} `json:"jwk" bson:"jwk"`
+	Passhash   string                 `json:"-" bson:"passhash"`
+	FirstName  string                 `json:"firstName" bson:"firstName"`
+	LastName   string                 `json:"lastName" bson:"lastName"`
 }
 
 func (s *Identity) Init() error {
