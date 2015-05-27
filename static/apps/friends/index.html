@@ -13,73 +13,86 @@
   <body>
 
     <div class="container" ng-controller="LoginController">
-      <div class="col-md-6 col-md-offset-3">
 
-        <section ng-show="!token">
-          <form ng-submit="auth()">
-            <h3 class="dark-grey">Authenticate</h3>
-            <div class="form-group col-lg-12">
-              <label>Your identity hostname</label>
-              <div class="input-group">
-                <span class="input-group-addon" id="basic-addon1">https://</span>
-                <input type="text" class="form-control" placeholder="your.host.name" ng-model="identity" required>
-                <span class="input-group-btn">
-                  <button class="btn btn-primary" type="submit">Connect</button>
-                </span>
+      <div class="row" ng-show="!token">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Authenicate</h3>
+          </div>
+          <div class="panel-body">
+            <form ng-submit="auth()">
+              <h3 class="dark-grey">Authenticate</h3>
+              <div class="form-group col-lg-12">
+                <label>Your identity hostname</label>
+                <div class="input-group">
+                  <span class="input-group-addon" id="basic-addon1">https://</span>
+                  <input type="text" class="form-control" placeholder="your.host.name" ng-model="identity" required>
+                  <span class="input-group-btn">
+                    <button class="btn btn-primary" type="submit">Connect</button>
+                  </span>
+                </div>
               </div>
-            </div>
-          </form>
-        </section>
+            </form>
+          </div>
+        </div>
+      </div>
 
-        <section ng-show="token">
-          <h2>Add friend</h2>
-          <form ng-submit="add()">
-            <div class="form-group col-lg-12">
-              <label>Identity hostname to add</label>
-              <div class="input-group">
-                <span class="input-group-addon" id="basic-addon1">https://</span>
-                <input type="text" class="form-control" placeholder="friend's.host.name" ng-model="hostnameToAdd" required>
-                <span class="input-group-btn">
-                  <button class="btn btn-primary" type="submit">Add</button>
-                </span>
+      <div class="row" ng-show="token">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Identities</h3>
+          </div>
+          <div class="panel-body">
+            <form ng-submit="add()">
+              <div class="form-group col-lg-12">
+                <label>Identity hostname to add</label>
+                <div class="input-group">
+                  <span class="input-group-addon" id="basic-addon1">https://</span>
+                  <input type="text" class="form-control" placeholder="friend's.host.name" ng-model="hostnameToAdd" required>
+                  <span class="input-group-btn">
+                    <button class="btn btn-primary" type="submit">Add</button>
+                  </span>
+                </div>
               </div>
-            </div>
-          </form>
-        </section>
-
-        <section ng-show="token">
-          <h2>Friends</h2>
+            </form>
+          </div>
           <ul class="list-group">
             <li class="list-group-item" ng-repeat="identity in identities">
-              <div>
-                <input type="checkbox" ng-model="instance.permissions.identities[identity.id]" ng-true-value="{archive:true, modify:false, remove:false}" ng-false-value="null" required="false">
-                <strong>{{ identity.firstName }} {{ identity.lastName }}</strong>
-              </div>
-              <div>
-                <small>{{ identity.hostname }}</small>
-                <button class="btn btn-xs btn-danger pull-right" disabled ng-click="identity.$delete()">remove</button>
-              </div>
+              <strong>{{ identity.firstName }} {{ identity.lastName }}</strong>
+              <small style="color: grey">({{ identity.hostname }})</small>
             </li>
           </ul>
-        </section>
-
-        <div class="row" ng-show="token">
-          <h2>Instances</h2>
-          <form ng-submit="send()">
-            <div class="form-group col-lg-12">
-              <label>Send ping</label>
-              <div class="input-group">
-                <input type="text" class="form-control" placeholder="message" ng-model="instance.data" required>
-                <span class="input-group-btn">
-                  <button class="btn btn-primary" type="submit">Send</button>
-                </span>
-              </div>
-            </div>
-          </form>
         </div>
+      </div>
 
-        <div class="row" ng-show="token">
-          <ul class="list-group row">
+      <div class="row" ng-show="token">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Instances</h3>
+          </div>
+          <div class="panel-body">
+            <form ng-submit="send()">
+              <div class="form-group col-lg-12">
+                <label>Send ping</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" placeholder="message" ng-model="instance.data" required>
+                  <span class="input-group-btn">
+                    <button class="btn btn-primary" type="submit">Send</button>
+                  </span>
+                </div>
+                <br>
+                <label>To</label>
+                <div class="input-group" ng-repeat="identity in identities">
+                  <label ng-hide="me.id==identity.id">
+                    <input type="checkbox" ng-model="instance.permissions.identities[identity.id]" ng-true-value="{archive:true, modify:false, remove:false}" ng-false-value="null" required="false">
+                    {{ identity.firstName }} {{ identity.lastName }}
+                  </label>
+                </div>
+
+              </div>
+            </form>
+          </div>
+          <ul class="list-group">
             <li class="list-group-item" ng-repeat="instance in instances">
               <div>
                 <strong>{{ getName(instance.owner) }}</strong>: {{ instance.data }}
@@ -87,11 +100,11 @@
             </li>
           </ul>
         </div>
-
-        <pre>{{instance || json}}</pre>
-        <pre>{{response || json}}</pre>
-
       </div>
+
+    <!-- <pre>{{instance || json}}</pre> -->
+    <!-- <pre>{{response || json}}</pre> -->
+
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
@@ -153,6 +166,9 @@
           Settings.token = jwtHelper.decodeToken($location.search().token);
           Settings.hostname = Settings.token.id;
         }
+        if (!Settings.hostname) {
+          window.location = window.location.href.replace(window.location.search, '');
+        }
       }
     })
     .controller('LoginController', function($scope, $http, $location, $window, $websocket, Identities, Instances, Settings) {
@@ -169,6 +185,10 @@
       $scope.token = $location.search().token;
       $scope.identities = Identities.query();
       $scope.instances = collections.instances;
+      $http.get(window.location.protocol+'//'+Settings.hostname+'/').success(function(data, status) {
+        $scope.me = data;
+        console.info($scope.me);
+      });
 
       Instances.query(function(data) {
         angular.extend(collections.instances, data);
@@ -201,7 +221,7 @@
         $window.location = window.location.protocol+'//'+$scope.identity+'/auth?target='+encodeURIComponent(window.location.href+'?token=');
       }
       $scope.add = function() {
-        $http.post('/identities', { hostname: $scope.hostnameToAdd })
+        $http.post(window.location.protocol+'//'+Settings.hostname+'/identities', { hostname: $scope.hostnameToAdd })
         .success(function(data, status) {
           $scope.response = data;
           $scope.identities = Identities.query();
