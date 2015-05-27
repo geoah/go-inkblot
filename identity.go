@@ -162,7 +162,8 @@ func (s *Identity) Send(instance *Instance) (err error) {
 	if err == nil {
 		// var data []byte = []byte(str)
 		fmt.Printf("Sending '%s' to %s\n", string(data), s.GetURI())
-		_, err = http.Post(fmt.Sprintf("%s/instances", s.GetURI()), "application/json", bytes.NewBuffer(data))
+		resp, err := http.Post(fmt.Sprintf("%s/instances", s.GetURI()), "application/json", bytes.NewBuffer(data))
+		fmt.Println("Sending err:", resp, err)
 	}
 	return err
 }
