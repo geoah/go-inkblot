@@ -185,9 +185,12 @@ func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 				} else {
 					fmt.Println(">>> IS *NOT* VALID")
 					clientError(w, "Invalid signature")
+					return
 				}
 			} else {
 				fmt.Println(">>> error validating", err)
+				clientError(w, "Could not validate signature")
+				return
 			}
 		}
 	}
