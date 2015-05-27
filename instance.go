@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
+
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/docker/libtrust"
 )
@@ -139,4 +142,21 @@ func (s *Instance) Verify() (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *Instance) Push() (err error) {
+	// TODO Check if this is our own identity
+	for identityHostname, _ := range s.Payload.Permissions.Identities {
+		// Get identity
+		identity := Identity{}
+		err = db.C("identities").Find(bson.M{"_id": identityHostname}).One(&identity)
+		if err == nil {
+			if identity.Hostname != "" && identity.GetURI() != "" {
+				identity.Send(s)
+			}
+		} else {
+			fmt.Println("Could not find local identity", identityHostname)
+		}
+	}
+	return err
 }
