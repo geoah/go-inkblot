@@ -170,6 +170,7 @@ func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 			if err == nil {
 				w.WriteJson(instance.Payload)
 				instance.Push()
+				instance.Broadcast()
 				return
 			}
 		}
@@ -191,6 +192,7 @@ func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 				if err == nil {
 					w.WriteJson(instance.Payload)
 					instance.Push()
+					instance.Broadcast()
 					return
 				}
 			} else {

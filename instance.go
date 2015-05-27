@@ -161,3 +161,11 @@ func (s *Instance) Push() {
 		}(s)
 	}
 }
+
+func (s *Instance) Broadcast() {
+	envelope := Envelope{Type: "instance", Data: s.Payload}
+	jsonString, err := envelope.ToJSON()
+	if err == nil {
+		h.broadcast <- jsonString
+	}
+}

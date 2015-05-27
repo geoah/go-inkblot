@@ -29,6 +29,7 @@ var db *mgo.Database
 func main() {
 	// Parse flags
 	flag.Parse()
+	go h.run()
 
 	var err error
 	mgoSession, err = mgo.Dial(getenvOrDefault("MONGOLAB_URI", "localhost"))
@@ -95,6 +96,7 @@ func main() {
 	http.Handle("/setup", http.StripPrefix("/setup", http.FileServer(http.Dir("./static/setup"))))
 	http.Handle("/auth", http.StripPrefix("/auth", http.FileServer(http.Dir("./static/auth"))))
 	http.Handle("/apps/friends", http.StripPrefix("/apps/friends", http.FileServer(http.Dir("./static/apps/friends"))))
+	http.HandleFunc("/ws", serveWs)
 
 	go func() {
 		if os.Getenv("MONGOLAB_URI") != "" {
