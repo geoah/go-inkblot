@@ -105,14 +105,14 @@
       return {};
     })
     .factory('Identities', function($resource, Settings) {
-      return $resource('http://'+Settings.hostname+'/identities/:id', { id: '@id' }, {
+      return $resource(window.location.protocol+'//'+Settings.hostname+'/identities/:id', { id: '@id' }, {
         update: {
           method: 'PUT'
         }
       });
     })
     .factory('Instances', function($resource, Settings) {
-      return $resource('http://'+Settings.hostname+'/instances/:id', { id: '@id' }, {
+      return $resource(window.location.protocol+'//'+Settings.hostname+'/instances/:id', { id: '@id' }, {
         update: {
           method: 'PUT'
         }
