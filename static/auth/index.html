@@ -49,7 +49,7 @@
     }])
     .controller('LoginController', ['$scope', '$http', '$location', '$window', function($scope, $http, $location, $window) {
       $scope.login = function() {
-        $http.post('/login', { username: 'user', password: $scope.password })
+        $http.post('/login', { username: window.location.hostname, password: $scope.password })
         .success(function(data, status) {
           if ($location.search().target) {
             $window.location = $location.search().target + data.token;
