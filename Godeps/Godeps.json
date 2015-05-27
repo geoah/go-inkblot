@@ -21,6 +21,10 @@
 			"Rev": "c54fbb67c1f1e68d7d6f8d2ad7c9360404616a41"
 		},
 		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Rev": "1551221275a7bd42978745a376b2531f791d88f3"
+		},
+		{
 			"ImportPath": "github.com/twinj/uuid",
 			"Rev": "4d772442af203e27723acc7d1eea6c93cd319c57"
 		},
