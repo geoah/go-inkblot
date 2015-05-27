@@ -167,7 +167,7 @@
       $scope.identities = Identities.query();
       $scope.instances = Instances.query();
       $scope.auth = function() {
-        $window.location = 'http://'+$scope.identity+'/auth?target='+encodeURIComponent(window.location.href+'?token=');
+        $window.location = window.location.protocol+'//'+$scope.identity+'/auth?target='+encodeURIComponent(window.location.href+'?token=');
         // $window.location = 'https://'+$scope.identity+'/auth?target='+encodeURIComponent(window.location.href+'?token=');
       }
       $scope.add = function() {
