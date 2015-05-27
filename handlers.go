@@ -98,9 +98,9 @@ func HandlePublicRegisterPost(w rest.ResponseWriter, r *rest.Request) {
 
 func HandlePublicIndex(w rest.ResponseWriter, r *rest.Request) {
 	fmt.Println("GET /")
-	userData, ok := r.Env["REMOTE_USER"]
+	_, ok := r.Env["REMOTE_USER"]
 	if ok == true {
-		w.WriteJson(userData)
+		w.WriteJson(rt.self)
 	} else {
 		w.WriteJson(rt.self)
 	}
