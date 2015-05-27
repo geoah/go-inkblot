@@ -230,12 +230,16 @@ func HandleOwnIdentitiesPost(w rest.ResponseWriter, r *rest.Request) {
 			return
 		}
 		identity, err = FetchIdentity(identity.GetURI())
-		// if err == nil {
-		// 	rt.insertIdentity(&identity)
-		// }
+		fmt.Println("ER", err)
+		if err != nil {
+			clientError(w, "Could not retrieve identity")
+			return
+		}
 		_, err = db.C("identities").UpsertId(identity.ID, &identity)
 		if err != nil {
 			fmt.Println(err)
+			internal(w, "Could not upsert identity")
+			return
 		}
 		w.WriteJson(identity)
 	}
