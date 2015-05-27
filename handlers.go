@@ -168,6 +168,7 @@ func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 		_, err = db.C("instances").UpsertId(instance.ID, &instance)
 		if err == nil {
 			w.WriteJson(instance.Payload)
+			instance.Push()
 			return
 		}
 	} else {
@@ -180,7 +181,6 @@ func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 				if valid == true {
 					fmt.Println(">>> IS VALID")
 					w.WriteJson(instance.Payload)
-					instance.Push()
 					return
 				} else {
 					fmt.Println(">>> IS *NOT* VALID")
