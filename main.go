@@ -61,7 +61,7 @@ func main() {
 			h := sha1.New()
 			h.Write([]byte(password))
 			passhash := h.Sum(nil)
-			return rt.self.Passhash == fmt.Sprintf("%x", passhash)
+			return rt.self.Passhash == fmt.Sprintf("%x", passhash) && userId == rt.self.Hostname
 		},
 		SigningAlgorithm: "HS256",
 	}
