@@ -51,8 +51,13 @@
           <h2>Friends</h2>
           <ul class="list-group">
             <li class="list-group-item" ng-repeat="identity in identities">
-              <strong>{{ identity.hostname }}</strong>
-              <button class="btn btn-xs btn-danger pull-right" disabled ng-click="identity.$delete()">remove</button>
+              <div>
+                <strong>{{ identity.firstName }} {{ identity.lastName }}</strong>
+              </div>
+              <div>
+                <small>{{ identity.hostname }}</small>
+                <button class="btn btn-xs btn-danger pull-right" disabled ng-click="identity.$delete()">remove</button>
+              </div>
             </li>
           </ul>
         </section>
