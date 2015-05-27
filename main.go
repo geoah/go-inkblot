@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha1"
 	"errors"
 	"flag"
 	"fmt"
@@ -57,7 +58,10 @@ func main() {
 		Timeout:    time.Hour,
 		MaxRefresh: time.Hour * 24,
 		Authenticator: func(userId string, password string) bool {
-			return userId == "user" && password == "user"
+			h := sha1.New()
+			h.Write([]byte(password))
+			passhash := h.Sum(nil)
+			return rt.self.Passhash == fmt.Sprintf("%x", passhash)
 		},
 		SigningAlgorithm: "HS256",
 	}
