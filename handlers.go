@@ -144,65 +144,48 @@ func HandleIdentityInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 		panic(err)
 	}
 
+	// Create and populate instance
 	var instance Instance = Instance{}
 	instance.SetPayloadFromJson(body)
 
-	body, err = instance.ToJSON()
-	if err == nil {
-		fmt.Println(">>> GOT", string(body))
-		valid, err := instance.Verify()
+	// Check if request is authorized
+	_, ok := r.Env["REMOTE_USER"]
+	if ok == true {
+		// Request is from our own identity
+		instance.Owner = rt.self
+		instance.ID = uuid.Formatter(uuid.NewV4(), uuid.CleanHyphen)
+		instance.Payload.ID = instance.ID
+		instance.Payload.Owner = instance.Owner.ID
+		instance.Sign()
+
+		// Insert instance
+		_, err = db.C("instances").UpsertId(instance.ID, &instance)
 		if err == nil {
-			if valid == true {
-				fmt.Println(">>> IS VALID")
+			w.WriteJson(instance.Payload)
+			return
+		}
+	} else {
+		// Request is from a different identity
+		body, err = instance.ToJSON()
+		if err == nil {
+			fmt.Println(">>> GOT", string(body))
+			valid, err := instance.Verify()
+			if err == nil {
+				if valid == true {
+					fmt.Println(">>> IS VALID")
+					w.WriteJson(instance.Payload)
+					instance.Push()
+					return
+				} else {
+					fmt.Println(">>> IS *NOT* VALID")
+					clientError(w, "Invalid signature")
+				}
 			} else {
-				fmt.Println(">>> IS *NOT* VALID")
+				fmt.Println(">>> error validating", err)
 			}
-		} else {
-			fmt.Println(">>> error validating", err)
 		}
 	}
-	w.WriteJson(rt.self)
-}
-
-func HandleOwnInstancesPost(w rest.ResponseWriter, r *rest.Request) {
-	fmt.Println("POST /instances [OWN]")
-
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-	if err != nil {
-		panic(err)
-	}
-	if err := r.Body.Close(); err != nil {
-		panic(err)
-	}
-
-	var instance Instance = Instance{}
-	instance.SetPayloadFromJson(body)
-	instance.Owner = rt.self
-	instance.ID = uuid.Formatter(uuid.NewV4(), uuid.CleanHyphen)
-	instance.Payload.ID = instance.ID
-	instance.Payload.Owner = instance.Owner.ID
-	instance.Sign()
-
-	_, err = db.C("instances").UpsertId(instance.ID, &instance)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	body, err = instance.ToJSON()
-	if err == nil {
-		fmt.Println(">>> GOT", string(body))
-		// valid, err := instance.Verify()
-		// if err == nil {
-		// 	if valid == true {
-		// 		fmt.Println(">>> IS VALID")
-		// 	} else {
-		// 		fmt.Println(">>> IS *NOT* VALID")
-		// 	}
-		// } else {
-		// 	fmt.Println(">>> error validating", err)
-		// }
-	}
-	w.WriteJson(body)
+	clientError(w, err.Error())
 }
 
 func HandleOwnIdentities(w rest.ResponseWriter, r *rest.Request) {

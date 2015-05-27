@@ -79,9 +79,8 @@ func main() {
 		rest.Post("/register", HandlePublicRegisterPost),
 		rest.Get("/", jwtMiddlewareOptionally.MiddlewareFunc(HandlePublicIndex)),
 		rest.Post("/", HandlePublicIndexPost),
-		rest.Post("/instances", HandleOwnInstancesPost),
-		// rest.HandleFunc("/instances", HandleIdentityInstancesPost).Methods("SYNC")
 		rest.Get("/instances", HandleOwnInstances),
+		rest.Post("/instances", jwtMiddlewareOptionally.MiddlewareFunc(HandleInstancesPost)),
 		rest.Get("/identities", jwtMiddlewareOptionally.MiddlewareFunc(HandleOwnIdentities)),
 		rest.Post("/identities", HandleOwnIdentitiesPost),
 		rest.Get("/settings", HandleOwnSettings),
