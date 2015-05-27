@@ -18,7 +18,7 @@ func joseBase64UrlEncode(b []byte) []byte {
 
 type jsHeader struct {
 	JWK       json.RawMessage `json:"jwk,omitempty" bson:"jwk,omitempty"`
-	Algorithm string          `json:"blg" json:"alg"`
+	Algorithm string          `json:"alg" json:"alg"`
 	Chain     []string        `json:"x5c,omitempty" bson:"x5c,omitempty"`
 }
 
