@@ -52,8 +52,8 @@ type Payload struct {
 		Identities map[string]PayloadIdentities `json:"identities" bson:"identities"`
 		Public     bool                         `json:"public" bson:"public"`
 	} `json:"permissions" bson:"permissions"`
-	Schema string `json:"schema" bson:"schema"`
-	Data   string `json:"data" bson:"data"`
+	Schema string      `json:"schema" bson:"schema"`
+	Data   interface{} `json:"data" bson:"data"`
 	// Version struct {
 	// 	App struct {
 	// 		Name    string `json:"name"`
@@ -76,7 +76,7 @@ func (s *Payload) ToJSON() ([]byte, error) {
 }
 
 type Instance struct {
-	ID      string    `json:"owner" bson:"owner"`
+	ID      string    `json:"id" bson:"_id"`
 	Owner   *Identity `json:"owner" bson:"owner"`
 	Payload Payload   `json:"payload" bson:"payload"`
 }
