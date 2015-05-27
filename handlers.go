@@ -180,8 +180,13 @@ func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 			if err == nil {
 				if valid == true {
 					fmt.Println(">>> IS VALID")
-					w.WriteJson(instance.Payload)
-					return
+					// Insert instance
+					_, err = db.C("instances").UpsertId(instance.ID, &instance)
+					if err == nil {
+						w.WriteJson(instance.Payload)
+						instance.Push()
+						return
+					}
 				} else {
 					fmt.Println(">>> IS *NOT* VALID")
 					clientError(w, "Invalid signature")
