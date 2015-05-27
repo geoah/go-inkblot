@@ -136,11 +136,12 @@ func FetchIdentity(uri string) (identity Identity, err error) {
 	identity = Identity{}
 	selfJSON, err := json.Marshal(&rt.self)
 	var resp *http.Response
+	var body []byte
 	if err == nil {
 		resp, err = http.Post(uri, "application/json", bytes.NewBuffer(selfJSON))
 		if err == nil {
 			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err = ioutil.ReadAll(resp.Body)
 			if err == nil {
 				err = json.Unmarshal(body, &identity)
 			} else {
