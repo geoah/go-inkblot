@@ -162,41 +162,46 @@ func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 		instance.ID = uuid.Formatter(uuid.NewV4(), uuid.CleanHyphen)
 		instance.Payload.ID = instance.ID
 		instance.Payload.Owner = instance.Owner.ID
-		instance.Sign()
+		err = instance.Sign()
 
-		// Insert instance
-		_, err = db.C("instances").UpsertId(instance.ID, &instance)
 		if err == nil {
-			w.WriteJson(instance.Payload)
-			instance.Push()
-			return
+			// Insert instance
+			_, err = db.C("instances").UpsertId(instance.ID, &instance)
+			if err == nil {
+				w.WriteJson(instance.Payload)
+				instance.Push()
+				return
+			}
 		}
 	} else {
+		// Request is not authorized
+		// so check if it should be
+		if instance.Payload.Owner == rt.self.ID {
+			fmt.Println("Missing authentication")
+			clientError(w, "An authenticated request is required to post as this identity's owner")
+			return
+		}
 		// Request is from a different identity
-		body, err = instance.ToJSON()
+		valid, err := instance.Verify()
 		if err == nil {
-			fmt.Println(">>> GOT", string(body))
-			valid, err := instance.Verify()
-			if err == nil {
-				if valid == true {
-					fmt.Println(">>> IS VALID")
-					// Insert instance
-					_, err = db.C("instances").UpsertId(instance.ID, &instance)
-					if err == nil {
-						w.WriteJson(instance.Payload)
-						instance.Push()
-						return
-					}
-				} else {
-					fmt.Println(">>> IS *NOT* VALID")
-					clientError(w, "Invalid signature")
+			if valid == true {
+				fmt.Println(">>> IS VALID")
+				// Insert instance
+				_, err = db.C("instances").UpsertId(instance.ID, &instance)
+				if err == nil {
+					w.WriteJson(instance.Payload)
+					instance.Push()
 					return
 				}
 			} else {
-				fmt.Println(">>> error validating", err)
-				clientError(w, "Could not validate signature")
+				fmt.Println(">>> IS *NOT* VALID")
+				clientError(w, "Invalid signature")
 				return
 			}
+		} else {
+			fmt.Println(">>> error validating", err)
+			clientError(w, "Could not validate signature")
+			return
 		}
 	}
 	clientError(w, err.Error())
