@@ -52,6 +52,7 @@
           <ul class="list-group">
             <li class="list-group-item" ng-repeat="identity in identities">
               <div>
+                <input type="checkbox" ng-model="instance.permissions.identities[identity.id]" ng-true-value="{archive:true, modify:false, remove:false}" ng-false-value="null" required="false">
                 <strong>{{ identity.firstName }} {{ identity.lastName }}</strong>
               </div>
               <div>
@@ -62,6 +63,32 @@
           </ul>
         </section>
 
+        <div class="row" ng-show="token">
+          <h2>Instances</h2>
+          <form ng-submit="send()">
+            <div class="form-group col-lg-12">
+              <label>Send ping</label>
+              <div class="input-group">
+                <input type="text" class="form-control" placeholder="message" ng-model="instance.data" required>
+                <span class="input-group-btn">
+                  <button class="btn btn-primary" type="submit">Send</button>
+                </span>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="row" ng-show="token">
+          <ul class="list-group row">
+            <li class="list-group-item" ng-repeat="instance in instances">
+              <div>
+                <strong>{{ instance.owner }}</strong>: {{ instance.data }}
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <pre>{{instance || json}}</pre>
         <pre>{{response || json}}</pre>
 
       </div>
@@ -70,11 +97,22 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-resource.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-route.min.js"></script>
+    <script src="https://cdn.rawgit.com/auth0/angular-jwt/master/dist/angular-jwt.js"></script>
     <script>
     // http://localhost:8000/setup/?target=http:%2F%2Flocalhost:8000%2Finfo%2F%3Ftoken%3D
-    angular.module('identityApp', ['ngResource'])
-    .factory('Identities', function($resource) {
-      return $resource('/identities/:id', { id: '@id' }, {
+    angular.module('identityApp', ['ngResource', 'angular-jwt'])
+    .service('Settings', function() {
+      return {};
+    })
+    .factory('Identities', function($resource, Settings) {
+      return $resource('http://'+Settings.hostname+'/identities/:id', { id: '@id' }, {
+        update: {
+          method: 'PUT'
+        }
+      });
+    })
+    .factory('Instances', function($resource, Settings) {
+      return $resource('http://'+Settings.hostname+'/instances/:id', { id: '@id' }, {
         update: {
           method: 'PUT'
         }
@@ -107,14 +145,27 @@
       // Intercept 401 responses
       $httpProvider.interceptors.push('authHttpResponseInterceptor');
     }])
-    .run(['$http', '$location', function($http, $location){
+    .run(['$http', '$location', 'jwtHelper', 'Settings', function($http, $location, jwtHelper, Settings){
       if ($location.search().token) {
-        $http.defaults.headers.common.Authorization = 'Bearer '+$location.search().token;
+        if (!jwtHelper.isTokenExpired($location.search().token)) {
+          $http.defaults.headers.common.Authorization = 'Bearer '+$location.search().token;
+          Settings.token = jwtHelper.decodeToken($location.search().token);
+          Settings.hostname = Settings.token.id;
+          console.info(Settings);
+        }
       }
     }])
-    .controller('LoginController', ['$scope', '$http', '$location', '$window', 'Identities', function($scope, $http, $location, $window, Identities) {
+    .controller('LoginController', ['$scope', '$http', '$location', '$window', 'Identities', 'Instances', function($scope, $http, $location, $window, Identities, Instances) {
+      $scope.instance = {
+        permissions: {
+          identities: {},
+          public: true
+        },
+        schema: 'ping'
+      };
       $scope.token = $location.search().token;
       $scope.identities = Identities.query();
+      $scope.instances = Instances.query();
       $scope.auth = function() {
         $window.location = 'http://'+$scope.identity+'/auth?target='+encodeURIComponent(window.location.href+'?token=');
         // $window.location = 'https://'+$scope.identity+'/auth?target='+encodeURIComponent(window.location.href+'?token=');
@@ -131,6 +182,12 @@
           $scope.response = data;
         });
       };
+      $scope.send = function() {
+        Instances.save($scope.instance, function(data) {
+          console.info(data);
+          $scope.instances = Instances.query();
+        });
+      }
     }]);
     </script>
   </body>
