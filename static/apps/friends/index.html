@@ -40,7 +40,7 @@
                 <span class="input-group-addon" id="basic-addon1">https://</span>
                 <input type="text" class="form-control" placeholder="friend's.host.name" ng-model="hostnameToAdd" required>
                 <span class="input-group-btn">
-                  <button class="btn btn-primary" type="submit">Connect</button>
+                  <button class="btn btn-primary" type="submit">Add</button>
                 </span>
               </div>
             </div>
@@ -75,12 +75,32 @@
         }
       });
     })
-    .config(['$locationProvider', function($locationProvider) {
+    .factory('authHttpResponseInterceptor', ['$q', '$location', function($q, $location) {
+      return {
+        response: function(response){
+          if (response.status === 401) {
+            console.log("Response 401");
+          }
+          return response || $q.when(response);
+        },
+        responseError: function(rejection) {
+          if (rejection.status === 401) {
+            console.log("Response Error 401",rejection);
+            // $location.path('/login').search('returnTo', $location.path());
+            window.location = window.location.href.replace(window.location.search, '')
+          }
+          return $q.reject(rejection);
+        }
+      }
+    }])
+    .config(['$locationProvider', '$httpProvider', function($locationProvider, $httpProvider) {
       // Enable html5Mode in order to make query params play nice since we have no routing
       $locationProvider.html5Mode({
         enabled: true,
         requireBase: false
       });
+      // Intercept 401 responses
+      $httpProvider.interceptors.push('authHttpResponseInterceptor');
     }])
     .run(['$http', '$location', function($http, $location){
       if ($location.search().token) {
