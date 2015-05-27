@@ -123,19 +123,25 @@ func HandlePublicIndexPost(w rest.ResponseWriter, r *rest.Request) {
 	}
 }
 
-func HandleOwnInstances(w rest.ResponseWriter, r *rest.Request) {
+func HandleInstances(w rest.ResponseWriter, r *rest.Request) {
 	fmt.Println("GET /instances")
-	var instances []Instance
+	var instances []Instance = make([]Instance, 0)
+	var instancesJson []Payload = make([]Payload, 0)
 	err := db.C("instances").Find(bson.M{}).All(&instances)
-	if err != nil {
-		fmt.Println(err)
+	if err == nil {
+		for _, instance := range instances {
+			instancesJson = append(instancesJson, instance.Payload)
+		}
+		w.WriteJson(instancesJson)
+		return
 	}
-	w.WriteJson(instances)
+	internal(w, err.Error())
 }
 
-func HandleIdentityInstancesPost(w rest.ResponseWriter, r *rest.Request) {
+func HandleInstancesPost(w rest.ResponseWriter, r *rest.Request) {
 	fmt.Println("POST /instances")
 
+	// Get body
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	if err != nil {
 		panic(err)
