@@ -144,19 +144,20 @@ func (s *Instance) Verify() (bool, error) {
 	return true, nil
 }
 
-func (s *Instance) Push() (err error) {
+func (s *Instance) Push() {
 	// TODO Check if this is our own identity
 	for identityHostname, _ := range s.Payload.Permissions.Identities {
-		// Get identity
-		identity := Identity{}
-		err = db.C("identities").Find(bson.M{"_id": identityHostname}).One(&identity)
-		if err == nil {
-			if identity.Hostname != "" && identity.GetURI() != "" {
-				identity.Send(s)
+		go func(instance *Instance) {
+			// Get identity
+			identity := Identity{}
+			err := db.C("identities").Find(bson.M{"_id": identityHostname}).One(&identity)
+			if err == nil {
+				if identity.Hostname != "" && identity.GetURI() != "" {
+					identity.Send(s)
+				}
+			} else {
+				fmt.Println("Could not find local identity", identityHostname)
 			}
-		} else {
-			fmt.Println("Could not find local identity", identityHostname)
-		}
+		}(s)
 	}
-	return err
 }
