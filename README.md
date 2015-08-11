@@ -1,6 +1,6 @@
 # Inkblot
 
-This is a proof of concept identity server for [ink](protocol.ink).
+This is a proof of concept identity server for [ink](http://protocol.ink).
 
 ## Deployment
 
